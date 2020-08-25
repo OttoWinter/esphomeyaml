@@ -8,7 +8,7 @@ static const char *TAG = "pulse_counter";
 
 const char *EDGE_MODE_TO_STRING[] = {"DISABLE", "INCREMENT", "DECREMENT"};
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
 void ICACHE_RAM_ATTR PulseCounterStorage::gpio_intr(PulseCounterStorage *arg) {
   const uint32_t now = micros();
   const bool discard = now - arg->last_pulse < arg->filter_us;
@@ -28,25 +28,20 @@ void ICACHE_RAM_ATTR PulseCounterStorage::gpio_intr(PulseCounterStorage *arg) {
       break;
   }
 }
-bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
-  this->pin = pin;
-  this->pin->setup();
-  this->isr_pin = this->pin->to_isr();
-  this->pin->attach_interrupt(PulseCounterStorage::gpio_intr, this, CHANGE);
-  return true;
-}
-pulse_counter_t PulseCounterStorage::read_raw_value() {
-  pulse_counter_t counter = this->counter;
-  pulse_counter_t ret = counter - this->last_value;
-  this->last_value = counter;
-  return ret;
-}
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
 bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
   this->pin = pin;
   this->pin->setup();
+
+#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
+  if (this->slow == true ) {
+    this->isr_pin = this->pin->to_isr();
+    this->pin->attach_interrupt(PulseCounterStorage::gpio_intr, this, CHANGE);
+  }
+#endif
+
+#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER  
   this->pcnt_unit = next_pcnt_unit;
   next_pcnt_unit = pcnt_unit_t(int(next_pcnt_unit) + 1);  // NOLINT
 
@@ -124,16 +119,25 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
     ESP_LOGE(TAG, "Resuming pulse counter failed: %s", esp_err_to_name(error));
     return false;
   }
+#endif
+
   return true;
 }
+
 pulse_counter_t PulseCounterStorage::read_raw_value() {
   pulse_counter_t counter;
+#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
+  counter = this->counter;
+#endif
+
+#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
   pcnt_get_counter_value(this->pcnt_unit, &counter);
+#endif  
+
   pulse_counter_t ret = counter - this->last_value;
   this->last_value = counter;
   return ret;
 }
-#endif
 
 void PulseCounterSensor::setup() {
   ESP_LOGCONFIG(TAG, "Setting up pulse counter '%s'...", this->name_.c_str());
@@ -160,7 +164,7 @@ void PulseCounterSensor::update() {
   this->publish_state(value);
 }
 
-#ifdef ARDUINO_ARCH_ESP32
+#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
 pcnt_unit_t next_pcnt_unit = PCNT_UNIT_0;
 #endif
 
