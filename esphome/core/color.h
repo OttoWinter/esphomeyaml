@@ -31,18 +31,14 @@ struct Color {
     uint32_t raw_32;
   };
   inline Color() ALWAYS_INLINE : r(0), g(0), b(0), w(0) {}  // NOLINT
-  inline Color(float red, float green, float blue) ALWAYS_INLINE : r(uint8_t(red * 255)),
-                                                                   g(uint8_t(green * 255)),
-                                                                   b(uint8_t(blue * 255)),
-                                                                   w(0) {}
-  inline Color(float red, float green, float blue, float white) ALWAYS_INLINE : r(uint8_t(red * 255)),
-                                                                                g(uint8_t(green * 255)),
-                                                                                b(uint8_t(blue * 255)),
-                                                                                w(uint8_t(white * 255)) {}
-  inline Color(uint32_t colorcode) ALWAYS_INLINE : r((colorcode >> 16) & 0xFF),
-                                                   g((colorcode >> 8) & 0xFF),
-                                                   b((colorcode >> 0) & 0xFF),
-                                                   w((colorcode >> 24) & 0xFF) {}
+  inline Color(float red, float green, float blue, float white = 0.f) ALWAYS_INLINE : r(uint8_t(red * 255)),
+                                                                                      g(uint8_t(green * 255)),
+                                                                                      b(uint8_t(blue * 255)),
+                                                                                      w(uint8_t(white * 255)) {}
+  inline explicit Color(uint32_t colorcode) ALWAYS_INLINE : r((colorcode >> 16) & 0xFF),
+                                                            g((colorcode >> 8) & 0xFF),
+                                                            b((colorcode >> 0) & 0xFF),
+                                                            w((colorcode >> 24) & 0xFF) {}
   inline bool is_on() ALWAYS_INLINE { return this->raw_32 != 0; }
   inline Color &operator=(const Color &rhs) ALWAYS_INLINE {
     this->r = rhs.r;
@@ -60,8 +56,12 @@ struct Color {
   }
   inline uint8_t &operator[](uint8_t x) ALWAYS_INLINE { return this->raw[x]; }
   inline Color operator*(uint8_t scale) const ALWAYS_INLINE {
-    return Color(esp_scale8(this->red, scale), esp_scale8(this->green, scale), esp_scale8(this->blue, scale),
-                 esp_scale8(this->white, scale));
+    Color out;
+    out.red = esp_scale8(this->red, scale);
+    out.green = esp_scale8(this->green, scale);
+    out.blue = esp_scale8(this->blue, scale);
+    out.white = esp_scale8(this->white, scale);
+    return out;
   }
   inline Color &operator*=(uint8_t scale) ALWAYS_INLINE {
     this->red = esp_scale8(this->red, scale);
@@ -71,8 +71,12 @@ struct Color {
     return *this;
   }
   inline Color operator*(const Color &scale) const ALWAYS_INLINE {
-    return Color(esp_scale8(this->red, scale.red), esp_scale8(this->green, scale.green),
-                 esp_scale8(this->blue, scale.blue), esp_scale8(this->white, scale.white));
+    Color out;
+    out.red = esp_scale8(this->red, scale.red);
+    out.green = esp_scale8(this->green, scale.green);
+    out.blue = esp_scale8(this->blue, scale.blue);
+    out.white = esp_scale8(this->white, scale.white);
+    return out;
   }
   inline Color &operator*=(const Color &scale) ALWAYS_INLINE {
     this->red = esp_scale8(this->red, scale.red);
@@ -102,7 +106,11 @@ struct Color {
     return ret;
   }
   inline Color &operator+=(const Color &add) ALWAYS_INLINE { return *this = (*this) + add; }
-  inline Color operator+(uint8_t add) const ALWAYS_INLINE { return (*this) + Color(add, add, add, add); }
+  inline Color operator+(uint8_t add) const ALWAYS_INLINE {
+    Color addend;
+    addend.r = addend.g = addend.b = addend.w = add;
+    return (*this) + addend;
+  }
   inline Color &operator+=(uint8_t add) ALWAYS_INLINE { return *this = (*this) + add; }
   inline Color operator-(const Color &subtract) const ALWAYS_INLINE {
     Color ret;
@@ -126,7 +134,9 @@ struct Color {
   }
   inline Color &operator-=(const Color &subtract) ALWAYS_INLINE { return *this = (*this) - subtract; }
   inline Color operator-(uint8_t subtract) const ALWAYS_INLINE {
-    return (*this) - Color(subtract, subtract, subtract, subtract);
+    Color subtrahend;
+    subtrahend.r = subtrahend.g = subtrahend.b = subtrahend.w = subtract;
+    return (*this) - subtrahend;
   }
   inline Color &operator-=(uint8_t subtract) ALWAYS_INLINE { return *this = (*this) - subtract; }
   static Color random_color() {
