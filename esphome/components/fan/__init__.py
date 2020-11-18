@@ -8,10 +8,13 @@ from esphome.const import CONF_ID, CONF_INTERNAL, CONF_MQTT_ID, CONF_OSCILLATING
     CONF_SPEED_COMMAND_TOPIC, CONF_SPEED_STATE_TOPIC, CONF_NAME
 from esphome.core import CORE, coroutine, coroutine_with_priority
 
+CODEOWNERS = ['@rob-deutsch']
+
 IS_PLATFORM_COMPONENT = True
 
 fan_ns = cg.esphome_ns.namespace('fan')
-FanState = fan_ns.class_('FanState', cg.Nameable, cg.Component)
+Fan = fan_ns.class_('FanState', cg.Nameable)
+FanState = fan_ns.class_('FanState', Fan, cg.Component)
 MakeFan = cg.Application.struct('MakeFan')
 
 # Actions
@@ -27,8 +30,8 @@ FAN_SPEEDS = {
     'HIGH': FanSpeed.FAN_SPEED_HIGH,
 }
 
-FAN_SCHEMA = cv.MQTT_COMMAND_COMPONENT_SCHEMA.extend({
-    cv.GenerateID(): cv.declare_id(FanState),
+FAN_RAW_SCHEMA = cv.MQTT_COMMAND_COMPONENT_SCHEMA.extend({
+    cv.GenerateID(): cv.declare_id(Fan),
     cv.OnlyWith(CONF_MQTT_ID, 'mqtt'): cv.declare_id(mqtt.MQTTFanComponent),
     cv.Optional(CONF_OSCILLATION_STATE_TOPIC): cv.All(cv.requires_component('mqtt'),
                                                       cv.publish_topic),
@@ -38,6 +41,11 @@ FAN_SCHEMA = cv.MQTT_COMMAND_COMPONENT_SCHEMA.extend({
                                                 cv.publish_topic),
     cv.Optional(CONF_SPEED_COMMAND_TOPIC): cv.All(cv.requires_component('mqtt'),
                                                   cv.subscribe_topic),
+})
+
+
+FAN_SCHEMA = FAN_RAW_SCHEMA.extend({
+    cv.GenerateID(): cv.declare_id(FanState),
 })
 
 
