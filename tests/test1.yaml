@@ -802,25 +802,6 @@ sensor:
     aqi:
       name: 'AQI'
       calculation_type: 'CAQI'
-  - platform: teleinfo
-    tags:
-      - tag_name: 'HCHC'
-        sensor:
-          name: 'hchc'
-          unit_of_measurement: 'Wh'
-          icon: mdi:flash
-      - tag_name: 'HCHP'
-        sensor:
-          name: 'hchp'
-          unit_of_measurement: 'Wh'
-          icon: mdi:flash
-      - tag_name: 'PAPP'
-        sensor:
-          name: 'papp'
-          unit_of_measurement: 'VA'
-          icon: mdi:flash
-    update_interval: 60s
-    historical_mode: true
   - platform: mcp9808
     name: 'MCP9808 Temperature'
     update_interval: 15s
@@ -834,6 +815,12 @@ sensor:
     id: freezer_temp_source
     reference_voltage: 3.19
     number: 0
+  - platform: teleinfo
+    tag_name: "HCHC"
+    name: "hchc"
+    unit_of_measurement: "Wh"
+    icon: mdi:flash
+    teleinfo_id: myteleinfo
 
 esp32_touch:
   setup_mode: False
@@ -1823,6 +1810,7 @@ display:
     rowstart: 0
     lambda: |-
       it.rectangle(0, 0, it.get_width(), it.get_height());
+
 tm1651:
   id: tm1651_battery
   clk_pin: GPIO23
@@ -1984,6 +1972,10 @@ text_sensor:
   - platform: version
     name: 'ESPHome Version No Timestamp'
     hide_timestamp: True
+  - platform: teleinfo
+    tag_name: "OPTARIF"
+    name: "optarif"
+    teleinfo_id: myteleinfo
 
 sn74hc595:
   - id: 'sn74hc595_hub'
@@ -2014,3 +2006,7 @@ canbus:
                 lambda: 'return x[0] == 0x11;'
               then:
                 light.toggle: living_room_lights
+teleinfo:
+  id: myteleinfo
+  update_interval: 60s
+  historical_mode: true
