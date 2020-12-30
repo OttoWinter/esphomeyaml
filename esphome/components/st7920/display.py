@@ -2,7 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import display, spi
-from esphome.const import CONF_ID, CONF_LAMBDA, CONF_RS_PIN, CONF_WIDTH
+from esphome.const import CONF_ID, CONF_LAMBDA, CONF_RS_PIN, CONF_WIDTH, CONF_HEIGHT
 
 AUTO_LOAD = ['display']
 DEPENDENCIES = ['spi']
@@ -18,6 +18,7 @@ CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend({
     cv.Required(CONF_HEIGHT): cv.int_,
 }).extend(cv.polling_component_schema('60s')).extend(spi.spi_device_schema(cs_pin_required=False))
 
+
 def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
@@ -31,5 +32,5 @@ def to_code(config):
     cg.add(var.set_rs_pin(rs))
     cg.add(var.set_width(config[CONF_WIDTH]))
     cg.add(var.set_height(config[CONF_HEIGHT]))
-    
+
     yield display.register_display(var, config)

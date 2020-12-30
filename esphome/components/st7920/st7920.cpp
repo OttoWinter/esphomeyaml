@@ -8,27 +8,27 @@ namespace st7920 {
 static const char *TAG = "st7920";
 
 // ST7920 COMMANDS
-static const uint8_t LCD_DATA 0xFA       // Data bit
-static const uint8_t LCD_COMMAND 0xF8       // Command bit
-static const uint8_t LCD_CLS 0x01
-static const uint8_t LCD_HOME 0x02
-static const uint8_t LCD_ADDRINC 0x06
-static const uint8_t LCD_DISPLAYON 0x0C
-static const uint8_t LCD_DISPLAYOFF 0x08
-static const uint8_t LCD_CURSORON 0x0E
-static const uint8_t LCD_CURSORBLINK 0x0F
-static const uint8_t LCD_BASIC 0x30
-static const uint8_t LCD_GFXMODE 0x36
-static const uint8_t LCD_EXTEND 0x34
-static const uint8_t LCD_TXTMODE 0x34
-static const uint8_t LCD_STANDBY 0x01
-static const uint8_t LCD_SCROLL 0x03
-static const uint8_t LCD_SCROLLADDR 0x40
-static const uint8_t LCD_ADDR 0x80
-static const uint8_t LCD_LINE0 0x80
-static const uint8_t LCD_LINE1 0x90
-static const uint8_t LCD_LINE2 0x88
-static const uint8_t LCD_LINE3 0x98
+static const uint8_t LCD_DATA 0xFA;
+static const uint8_t LCD_COMMAND 0xF8;
+static const uint8_t LCD_CLS 0x01;
+static const uint8_t LCD_HOME 0x02;
+static const uint8_t LCD_ADDRINC 0x06;
+static const uint8_t LCD_DISPLAYON 0x0C;
+static const uint8_t LCD_DISPLAYOFF 0x08;
+static const uint8_t LCD_CURSORON 0x0E;
+static const uint8_t LCD_CURSORBLINK 0x0F;
+static const uint8_t LCD_BASIC 0x30;
+static const uint8_t LCD_GFXMODE 0x36;
+static const uint8_t LCD_EXTEND 0x34;
+static const uint8_t LCD_TXTMODE 0x34;
+static const uint8_t LCD_STANDBY 0x01;
+static const uint8_t LCD_SCROLL 0x03;
+static const uint8_t LCD_SCROLLADDR 0x40;
+static const uint8_t LCD_ADDR 0x80;
+static const uint8_t LCD_LINE0 0x80;
+static const uint8_t LCD_LINE1 0x90;
+static const uint8_t LCD_LINE2 0x88;
+static const uint8_t LCD_LINE3 0x98;
 
 void ST7920::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ST7920...");
@@ -79,18 +79,17 @@ void HOT ST7920::write_display_data() {
     this->goto_xy_(0, j);
     this->start_transaction_();
     for (i = 0; i < 16; i++) {  // 16 bytes from line #0+
-      b=this->buffer_[i + j * 16];
+      b = this->buffer_[i + j * 16];
       send_(LCD_DATA, b);
     }
     for (i = 0; i < 16; i++) {  // 16 bytes from line #32+
-      b=this->buffer_[i + (j + 32) * 16];
+      b = this->buffer_[i + (j + 32) * 16];
       send_(LCD_DATA, b);
     }
     this->end_transaction_();
     App.feed_wdt();
   }
 }
-
 
 void ST7920::fill(Color color) { memset(this->buffer_, 0, this->get_buffer_length_()); }
 
@@ -101,9 +100,7 @@ void ST7920::dump_config() {
   ESP_LOGD(TAG, "  Width: %d", this->width_);
 }
 
-float ST7920::get_setup_priority() const {
-  return setup_priority::PROCESSOR;
-}
+float ST7920::get_setup_priority() const { return setup_priority::PROCESSOR; }
 
 void ST7920::update() {
   this->fill(COLOR_OFF);
@@ -137,14 +134,14 @@ void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
 
 void ST7920::display_init_() {
   ESP_LOGCONFIG(TAG, "displayInit...");
-  command_(LCD_BASIC);  // 8bit mode
-  command_(LCD_BASIC);  // 8bit mode
-  command_(LCD_CLS);  // clear screen
-  delay(12);  // >10 ms delay
-  command_(LCD_ADDRINC);  // cursor increment right no shift
+  command_(LCD_BASIC);      // 8bit mode
+  command_(LCD_BASIC);      // 8bit mode
+  command_(LCD_CLS);        // clear screen
+  delay(12);                // >10 ms delay
+  command_(LCD_ADDRINC);    // cursor increment right no shift
   command_(LCD_DISPLAYON);  // D=1, C=0, B=0
-  command_(LCD_EXTEND); //LCD_EXTEND);
-  command_(LCD_GFXMODE); //LCD_GFXMODE);
+  command_(LCD_EXTEND);     //LCD_EXTEND);
+  command_(LCD_GFXMODE);    //LCD_GFXMODE);
   write_display_data();
 }
 
