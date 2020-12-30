@@ -8,27 +8,27 @@ namespace st7920 {
 static const char *TAG = "st7920";
 
 // ST7920 COMMANDS
-static const uint8_t LCD_DATA 0xFA;
-static const uint8_t LCD_COMMAND 0xF8;
-static const uint8_t LCD_CLS 0x01;
-static const uint8_t LCD_HOME 0x02;
-static const uint8_t LCD_ADDRINC 0x06;
-static const uint8_t LCD_DISPLAYON 0x0C;
-static const uint8_t LCD_DISPLAYOFF 0x08;
-static const uint8_t LCD_CURSORON 0x0E;
-static const uint8_t LCD_CURSORBLINK 0x0F;
-static const uint8_t LCD_BASIC 0x30;
-static const uint8_t LCD_GFXMODE 0x36;
-static const uint8_t LCD_EXTEND 0x34;
-static const uint8_t LCD_TXTMODE 0x34;
-static const uint8_t LCD_STANDBY 0x01;
-static const uint8_t LCD_SCROLL 0x03;
-static const uint8_t LCD_SCROLLADDR 0x40;
-static const uint8_t LCD_ADDR 0x80;
-static const uint8_t LCD_LINE0 0x80;
-static const uint8_t LCD_LINE1 0x90;
-static const uint8_t LCD_LINE2 0x88;
-static const uint8_t LCD_LINE3 0x98;
+static const uint8_t LCD_DATA = 0xFA;
+static const uint8_t LCD_COMMAND = 0xF8;
+static const uint8_t LCD_CLS = 0x01;
+static const uint8_t LCD_HOME = 0x02;
+static const uint8_t LCD_ADDRINC = 0x06;
+static const uint8_t LCD_DISPLAYON = 0x0C;
+static const uint8_t LCD_DISPLAYOFF = 0x08;
+static const uint8_t LCD_CURSORON = 0x0E;
+static const uint8_t LCD_CURSORBLINK = 0x0F;
+static const uint8_t LCD_BASIC = 0x30;
+static const uint8_t LCD_GFXMODE = 0x36;
+static const uint8_t LCD_EXTEND = 0x34;
+static const uint8_t LCD_TXTMODE = 0x34;
+static const uint8_t LCD_STANDBY = 0x01;
+static const uint8_t LCD_SCROLL = 0x03;
+static const uint8_t LCD_SCROLLADDR = 0x40;
+static const uint8_t LCD_ADDR = 0x80;
+static const uint8_t LCD_LINE0 = 0x80;
+static const uint8_t LCD_LINE1 = 0x90;
+static const uint8_t LCD_LINE2 = 0x88;
+static const uint8_t LCD_LINE3 = 0x98;
 
 void ST7920::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ST7920...");
