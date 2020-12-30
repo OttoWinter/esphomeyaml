@@ -2,16 +2,10 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import display, spi
-from esphome.const import CONF_ID, CONF_LAMBDA
-from esphome.const import CONF_SCL_PIN, CONF_MOSI_PIN, CONF_CS_PIN, CONF_ID, CONF_LAMBDA, CONF_PAGES
-from esphome.const import CONF_EXTERNAL_VCC, CONF_LAMBDA, CONF_MODEL, CONF_RESET_PIN
+from esphome.const import CONF_ID, CONF_LAMBDA, CONF_RS_PIN, CONF_WIDTH
 
 AUTO_LOAD = ['display']
 DEPENDENCIES = ['spi']
-
-CONF_RS_PIN = 'rs_pin'
-CONF_WIDTH = 'width'
-CONF_HEIGHT = 'height'
 
 st7920_ns = cg.esphome_ns.namespace('st7920')
 ST7920 = st7920_ns.class_('ST7920', cg.PollingComponent, display.DisplayBuffer, spi.SPIDevice)

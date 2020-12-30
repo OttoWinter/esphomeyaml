@@ -39,19 +39,19 @@ void ST7920::setup() {
   delay(120);
   this->init_internal_(this->get_buffer_length_());
   delay(120);
-  displayInit();
+  display_init();
 }
 
 void ST7920::command(uint8_t value) {
-  this->startTransaction();
+  this->start_transaction();
   send(LCD_COMMAND, value);
-  this->endTransaction();
+  this->end_transaction();
 }
 
 void ST7920::data(uint8_t value) {
-  this->startTransaction();
+  this->start_transaction();
   send(LCD_DATA, value);
-  this->endTransaction();
+  this->end_transaction();
 }
 
 void ST7920::send(uint8_t type, uint8_t value) {
@@ -60,7 +60,7 @@ void ST7920::send(uint8_t type, uint8_t value) {
   this->write_byte(value << 4);
 }
 
-void ST7920::gotoXY(uint16_t x, uint16_t y) {
+void ST7920::goto_xy(uint16_t x, uint16_t y) {
   if (y>=32 && y<64) {
     y-=32; x+=8;
   } else if (y>=64 && y<64+32) {
@@ -76,8 +76,8 @@ void HOT ST7920::write_display_data() {
   long start = millis();
   byte i,j,b;
   for(j=0;j<this->get_height_internal()/2;j++) {
-    gotoXY(0, j);
-    this->startTransaction();
+    this->goto_xy(0, j);
+    this->start_transaction();
     for(i=0; i<16; i++) {  // 16 bytes from line #0+
       b=this->buffer_[i+j*16];
       send(LCD_DATA, b);
@@ -86,7 +86,7 @@ void HOT ST7920::write_display_data() {
       b=this->buffer_[i+(j+32)*16];
       send(LCD_DATA, b);
     }
-    this->endTransaction();
+    this->end_transaction();
     App.feed_wdt();
   }
 }
@@ -143,7 +143,7 @@ void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
   }
 }
 
-void ST7920::displayInit() {
+void ST7920::display_init() {
   ESP_LOGCONFIG(TAG, "displayInit...");
   command(LCD_BASIC);  // 8bit mode
 	command(LCD_BASIC);  // 8bit mode
@@ -158,12 +158,12 @@ void ST7920::displayInit() {
   write_display_data();
 }
 
-void ST7920::startTransaction() {
+void ST7920::start_transaction() {
   this->enable();
   this->rs_pin_->digital_write(HIGH);
 }
 
-void ST7920::endTransaction() {
+void ST7920::end_transaction() {
   this->disable();
   this->rs_pin_->digital_write(LOW);
 }
