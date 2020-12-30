@@ -43,13 +43,13 @@ void ST7920::setup() {
 
 void ST7920::command_(uint8_t value) {
   this->start_transaction_();
-  send_(LCD_COMMAND, value);
+  this->send_(LCD_COMMAND, value);
   this->end_transaction_();
 }
 
 void ST7920::data_(uint8_t value) {
   this->start_transaction_();
-  send_(LCD_DATA, value);
+  this->send_(LCD_DATA, value);
   this->end_transaction_();
 }
 
@@ -70,8 +70,8 @@ void ST7920::goto_xy_(uint16_t x, uint16_t y) {
     y -= 64;
     x += 8;
   }
-  command_(LCD_ADDR | y);  // 6-bit (0..63)
-  command_(LCD_ADDR | x);  // 4-bit (0..15)
+  this->command_(LCD_ADDR | y);  // 6-bit (0..63)
+  this->command_(LCD_ADDR | x);  // 4-bit (0..15)
 }
 
 void HOT ST7920::write_display_data() {
@@ -81,11 +81,11 @@ void HOT ST7920::write_display_data() {
     this->start_transaction_();
     for (i = 0; i < 16; i++) {  // 16 bytes from line #0+
       b = this->buffer_[i + j * 16];
-      send_(LCD_DATA, b);
+      this->send_(LCD_DATA, b);
     }
     for (i = 0; i < 16; i++) {  // 16 bytes from line #32+
       b = this->buffer_[i + (j + 32) * 16];
-      send_(LCD_DATA, b);
+      this->send_(LCD_DATA, b);
     }
     this->end_transaction_();
     App.feed_wdt();
@@ -112,9 +112,9 @@ void ST7920::update() {
 
 void ST7920::loop() {}
 
-int ST7920::get_width_internal() { return width_; }
+int ST7920::get_width_internal() { return this->width_; }
 
-int ST7920::get_height_internal() { return height_; }
+int ST7920::get_height_internal() { return this->height_; }
 
 size_t ST7920::get_buffer_length_() {
   return size_t(this->get_width_internal()) * size_t(this->get_height_internal()) / 8u;
@@ -135,15 +135,15 @@ void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
 
 void ST7920::display_init_() {
   ESP_LOGCONFIG(TAG, "displayInit...");
-  command_(LCD_BASIC);      // 8bit mode
-  command_(LCD_BASIC);      // 8bit mode
-  command_(LCD_CLS);        // clear screen
+  this->command_(LCD_BASIC);      // 8bit mode
+  this->command_(LCD_BASIC);      // 8bit mode
+  this->command_(LCD_CLS);        // clear screen
   delay(12);                // >10 ms delay
-  command_(LCD_ADDRINC);    // cursor increment right no shift
-  command_(LCD_DISPLAYON);  // D=1, C=0, B=0
-  command_(LCD_EXTEND);     // LCD_EXTEND);
-  command_(LCD_GFXMODE);    // LCD_GFXMODE);
-  write_display_data();
+  this->command_(LCD_ADDRINC);    // cursor increment right no shift
+  this->command_(LCD_DISPLAYON);  // D=1, C=0, B=0
+  this->command_(LCD_EXTEND);     // LCD_EXTEND);
+  this->command_(LCD_GFXMODE);    // LCD_GFXMODE);
+  this->write_display_data();
 }
 
 void ST7920::start_transaction_() {
