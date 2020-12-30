@@ -40,14 +40,14 @@ class ST7920 : public PollingComponent,
   int get_height_internal() override;
   int get_width_internal() override;
   size_t get_buffer_length_();
-  void display_init();
-  void command(uint8_t value);
-  void data(uint8_t value);
-  void send(uint8_t type, uint8_t value);
-  void goto_xy(uint16_t x, uint16_t y);
-  void start_transaction();
-  void end_transaction();
-  
+  void display_init_();
+  void command_(uint8_t value);
+  void data_(uint8_t value);
+  void send_(uint8_t type, uint8_t value);
+  void goto_xy_(uint16_t x, uint16_t y);
+  void start_transaction_();
+  void end_transaction_();
+
   GPIOPin *rs_pin_;
   int16_t width_ = 128, height_ = 64;
   optional<st7920_writer_t> writer_local_{};

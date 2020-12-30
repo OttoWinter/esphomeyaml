@@ -1,34 +1,34 @@
 #include "st7920.h"
 #include "esphome/core/log.h"
 #include "esphome/components/display/display_buffer.h"
-#include "esphome.h"
 
 namespace esphome {
 namespace st7920 {
     
 static const char *TAG = "st7920";
 
-#define LCD_DATA        0XFA       // Data bit
-#define LCD_COMMAND     0xF8       // Command bit
-#define LCD_CLS         0x01
-#define LCD_HOME        0x02
-#define LCD_ADDRINC     0x06
-#define LCD_DISPLAYON   0x0C
-#define LCD_DISPLAYOFF  0x08
-#define LCD_CURSORON    0x0E
-#define LCD_CURSORBLINK 0x0F
-#define LCD_BASIC       0x30
-#define LCD_GFXMODE     0x36
-#define LCD_EXTEND      0x34
-#define LCD_TXTMODE     0x34
-#define LCD_STANDBY     0x01
-#define LCD_SCROLL      0x03
-#define LCD_SCROLLADDR  0x40
-#define LCD_ADDR        0x80
-#define LCD_LINE0       0x80
-#define LCD_LINE1       0x90
-#define LCD_LINE2       0x88
-#define LCD_LINE3       0x98
+// ST7920 COMMANDS
+static const uint8_t LCD_DATA        0xFA       // Data bit
+static const uint8_t LCD_COMMAND     0xF8       // Command bit
+static const uint8_t LCD_CLS         0x01
+static const uint8_t LCD_HOME        0x02
+static const uint8_t LCD_ADDRINC     0x06
+static const uint8_t LCD_DISPLAYON   0x0C
+static const uint8_t LCD_DISPLAYOFF  0x08
+static const uint8_t LCD_CURSORON    0x0E
+static const uint8_t LCD_CURSORBLINK 0x0F
+static const uint8_t LCD_BASIC       0x30
+static const uint8_t LCD_GFXMODE     0x36
+static const uint8_t LCD_EXTEND      0x34
+static const uint8_t LCD_TXTMODE     0x34
+static const uint8_t LCD_STANDBY     0x01
+static const uint8_t LCD_SCROLL      0x03
+static const uint8_t LCD_SCROLLADDR  0x40
+static const uint8_t LCD_ADDR        0x80
+static const uint8_t LCD_LINE0       0x80
+static const uint8_t LCD_LINE1       0x90
+static const uint8_t LCD_LINE2       0x88
+static const uint8_t LCD_LINE3       0x98
 
 void ST7920::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ST7920...");
@@ -36,31 +36,29 @@ void ST7920::setup() {
   this->spi_setup();
   this->rs_pin_->setup();
   this->rs_pin_->digital_write(LOW);
-  delay(120);
   this->init_internal_(this->get_buffer_length_());
-  delay(120);
-  display_init();
+  display_init_();
 }
 
-void ST7920::command(uint8_t value) {
-  this->start_transaction();
-  send(LCD_COMMAND, value);
-  this->end_transaction();
+void ST7920::command_(uint8_t value) {
+  this->start_transaction_();
+  send_(LCD_COMMAND, value);
+  this->end_transaction_();
 }
 
-void ST7920::data(uint8_t value) {
-  this->start_transaction();
-  send(LCD_DATA, value);
-  this->end_transaction();
+void ST7920::data_(uint8_t value) {
+  this->start_transaction_();
+  send_(LCD_DATA, value);
+  this->end_transaction_();
 }
 
-void ST7920::send(uint8_t type, uint8_t value) {
+void ST7920::send_(uint8_t type, uint8_t value) {
   this->write_byte(type);
   this->write_byte(value & 0xF0);
   this->write_byte(value << 4);
 }
 
-void ST7920::goto_xy(uint16_t x, uint16_t y) {
+void ST7920::goto_xy_(uint16_t x, uint16_t y) {
   if (y>=32 && y<64) {
     y-=32; x+=8;
   } else if (y>=64 && y<64+32) {
@@ -68,25 +66,24 @@ void ST7920::goto_xy(uint16_t x, uint16_t y) {
   } else if (y>=64+32 && y<64+64) {
     y-=64; x+=8;
   }
-  command(LCD_ADDR | y); // 6-bit (0..63)
-  command(LCD_ADDR | x); // 4-bit (0..15)
+  command_(LCD_ADDR | y); // 6-bit (0..63)
+  command_(LCD_ADDR | x); // 4-bit (0..15)
 }
 
 void HOT ST7920::write_display_data() {
-  long start = millis();
   byte i,j,b;
   for(j=0;j<this->get_height_internal()/2;j++) {
-    this->goto_xy(0, j);
-    this->start_transaction();
+    this->goto_xy_(0, j);
+    this->start_transaction_();
     for(i=0; i<16; i++) {  // 16 bytes from line #0+
       b=this->buffer_[i+j*16];
-      send(LCD_DATA, b);
+      send_(LCD_DATA, b);
     }
     for(i=0; i<16; i++) {  // 16 bytes from line #32+
       b=this->buffer_[i+(j+32)*16];
-      send(LCD_DATA, b);
+      send_(LCD_DATA, b);
     }
-    this->end_transaction();
+    this->end_transaction_();
     App.feed_wdt();
   }
 }
@@ -104,7 +101,7 @@ void ST7920::dump_config() {
 }
 
 float ST7920::get_setup_priority() const {
-	return setup_priority::PROCESSOR;
+  return setup_priority::PROCESSOR;
 }
 
 void ST7920::update() {
@@ -119,11 +116,11 @@ void ST7920::loop() {
 }
 
 int ST7920::get_width_internal() {
-	return width_;
+  return width_;
 }
 
 int ST7920::get_height_internal() {
-	return height_;
+  return height_;
 }
 
 size_t ST7920::get_buffer_length_() {
@@ -131,9 +128,9 @@ size_t ST7920::get_buffer_length_() {
 }
 
 void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
-	if (x >= this->get_width_internal() || x < 0 || y >= this->get_height_internal() || y < 0) {
+  if (x >= this->get_width_internal() || x < 0 || y >= this->get_height_internal() || y < 0) {
     ESP_LOGW(TAG, "Posiotion out of area: %dx%d", x, y);
-		return;
+    return;
   }
   int width = this->get_width_internal() / 8u;
   if (color.is_on()) {
@@ -143,27 +140,25 @@ void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
   }
 }
 
-void ST7920::display_init() {
+void ST7920::display_init_() {
   ESP_LOGCONFIG(TAG, "displayInit...");
-  command(LCD_BASIC);  // 8bit mode
-	command(LCD_BASIC);  // 8bit mode
-	// command(LCD_DISPLAYOFF);  // D=0, C=0, B=0
-	command(LCD_CLS);  // clear screen
-	delay(12);  // >10 ms delay
-	command(LCD_ADDRINC);  // cursor increment right no shift
-	command(LCD_DISPLAYON);  // D=1, C=0, B=0
-	// command(LCD_HOME);  // return to home
-	command(LCD_EXTEND); //LCD_EXTEND);
-	command(LCD_GFXMODE); //LCD_GFXMODE);
+  command_(LCD_BASIC);  // 8bit mode
+  command_(LCD_BASIC);  // 8bit mode
+  command_(LCD_CLS);  // clear screen
+  delay(12);  // >10 ms delay
+  command_(LCD_ADDRINC);  // cursor increment right no shift
+  command_(LCD_DISPLAYON);  // D=1, C=0, B=0
+  command_(LCD_EXTEND); //LCD_EXTEND);
+  command_(LCD_GFXMODE); //LCD_GFXMODE);
   write_display_data();
 }
 
-void ST7920::start_transaction() {
+void ST7920::start_transaction_() {
   this->enable();
   this->rs_pin_->digital_write(HIGH);
 }
 
-void ST7920::end_transaction() {
+void ST7920::end_transaction_() {
   this->disable();
   this->rs_pin_->digital_write(LOW);
 }
