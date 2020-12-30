@@ -138,7 +138,7 @@ void ST7920::display_init_() {
   this->command_(LCD_BASIC);      // 8bit mode
   this->command_(LCD_BASIC);      // 8bit mode
   this->command_(LCD_CLS);        // clear screen
-  delay(12);                // >10 ms delay
+  delay(12);                      // >10 ms delay
   this->command_(LCD_ADDRINC);    // cursor increment right no shift
   this->command_(LCD_DISPLAYON);  // D=1, C=0, B=0
   this->command_(LCD_EXTEND);     // LCD_EXTEND);
