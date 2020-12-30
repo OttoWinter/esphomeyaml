@@ -4,31 +4,31 @@
 
 namespace esphome {
 namespace st7920 {
-    
+
 static const char *TAG = "st7920";
 
 // ST7920 COMMANDS
-static const uint8_t LCD_DATA        0xFA       // Data bit
-static const uint8_t LCD_COMMAND     0xF8       // Command bit
-static const uint8_t LCD_CLS         0x01
-static const uint8_t LCD_HOME        0x02
-static const uint8_t LCD_ADDRINC     0x06
-static const uint8_t LCD_DISPLAYON   0x0C
-static const uint8_t LCD_DISPLAYOFF  0x08
-static const uint8_t LCD_CURSORON    0x0E
+static const uint8_t LCD_DATA 0xFA       // Data bit
+static const uint8_t LCD_COMMAND 0xF8       // Command bit
+static const uint8_t LCD_CLS 0x01
+static const uint8_t LCD_HOME 0x02
+static const uint8_t LCD_ADDRINC 0x06
+static const uint8_t LCD_DISPLAYON 0x0C
+static const uint8_t LCD_DISPLAYOFF 0x08
+static const uint8_t LCD_CURSORON 0x0E
 static const uint8_t LCD_CURSORBLINK 0x0F
-static const uint8_t LCD_BASIC       0x30
-static const uint8_t LCD_GFXMODE     0x36
-static const uint8_t LCD_EXTEND      0x34
-static const uint8_t LCD_TXTMODE     0x34
-static const uint8_t LCD_STANDBY     0x01
-static const uint8_t LCD_SCROLL      0x03
-static const uint8_t LCD_SCROLLADDR  0x40
-static const uint8_t LCD_ADDR        0x80
-static const uint8_t LCD_LINE0       0x80
-static const uint8_t LCD_LINE1       0x90
-static const uint8_t LCD_LINE2       0x88
-static const uint8_t LCD_LINE3       0x98
+static const uint8_t LCD_BASIC 0x30
+static const uint8_t LCD_GFXMODE 0x36
+static const uint8_t LCD_EXTEND 0x34
+static const uint8_t LCD_TXTMODE 0x34
+static const uint8_t LCD_STANDBY 0x01
+static const uint8_t LCD_SCROLL 0x03
+static const uint8_t LCD_SCROLLADDR 0x40
+static const uint8_t LCD_ADDR 0x80
+static const uint8_t LCD_LINE0 0x80
+static const uint8_t LCD_LINE1 0x90
+static const uint8_t LCD_LINE2 0x88
+static const uint8_t LCD_LINE3 0x98
 
 void ST7920::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ST7920...");
@@ -59,28 +59,31 @@ void ST7920::send_(uint8_t type, uint8_t value) {
 }
 
 void ST7920::goto_xy_(uint16_t x, uint16_t y) {
-  if (y>=32 && y<64) {
-    y-=32; x+=8;
-  } else if (y>=64 && y<64+32) {
-    y-=32; x+=0;
-  } else if (y>=64+32 && y<64+64) {
-    y-=64; x+=8;
+  if (y >= 32 && y < 64) {
+    y -= 32;
+    x += 8;
+  } else if (y >= 64 && y < 64 + 32) {
+    y -= 32;
+    x += 0;
+  } else if (y >= 64 + 32 && y < 64 + 64) {
+    y -= 64;
+    x += 8;
   }
-  command_(LCD_ADDR | y); // 6-bit (0..63)
-  command_(LCD_ADDR | x); // 4-bit (0..15)
+  command_(LCD_ADDR | y);  // 6-bit (0..63)
+  command_(LCD_ADDR | x);  // 4-bit (0..15)
 }
 
 void HOT ST7920::write_display_data() {
-  byte i,j,b;
-  for(j=0;j<this->get_height_internal()/2;j++) {
+  byte i, j, b;
+  for (j = 0; j < this->get_height_internal() / 2; j++) {
     this->goto_xy_(0, j);
     this->start_transaction_();
-    for(i=0; i<16; i++) {  // 16 bytes from line #0+
-      b=this->buffer_[i+j*16];
+    for (i = 0; i < 16; i++) {  // 16 bytes from line #0+
+      b=this->buffer_[i + j * 16];
       send_(LCD_DATA, b);
     }
-    for(i=0; i<16; i++) {  // 16 bytes from line #32+
-      b=this->buffer_[i+(j+32)*16];
+    for (i = 0; i < 16; i++) {  // 16 bytes from line #32+
+      b=this->buffer_[i + (j + 32) * 16];
       send_(LCD_DATA, b);
     }
     this->end_transaction_();
@@ -89,9 +92,7 @@ void HOT ST7920::write_display_data() {
 }
 
 
-void ST7920::fill(Color color) {
-  memset(this->buffer_, 0, this->get_buffer_length_());
-}
+void ST7920::fill(Color color) { memset(this->buffer_, 0, this->get_buffer_length_()); }
 
 void ST7920::dump_config() {
   LOG_DISPLAY("", "ST7920", this);
@@ -111,17 +112,11 @@ void ST7920::update() {
   this->write_display_data();
 }
 
-void ST7920::loop() {
+void ST7920::loop() {}
 
-}
+int ST7920::get_width_internal() { return width_; }
 
-int ST7920::get_width_internal() {
-  return width_;
-}
-
-int ST7920::get_height_internal() {
-  return height_;
-}
+int ST7920::get_height_internal() { return height_; }
 
 size_t ST7920::get_buffer_length_() {
   return size_t(this->get_width_internal()) * size_t(this->get_height_internal()) / 8u;
@@ -134,9 +129,9 @@ void HOT ST7920::draw_absolute_pixel_internal(int x, int y, Color color) {
   }
   int width = this->get_width_internal() / 8u;
   if (color.is_on()) {
-    this->buffer_[y * width + x/8] |=   (0x80 >> (x&7));
+    this->buffer_[y * width + x / 8] |= (0x80 >> (x & 7));
   } else {
-    this->buffer_[y * width + x/8] &=  ~(0x80 >> (x&7));
+    this->buffer_[y * width + x / 8] &= ~(0x80 >> (x & 7));
   }
 }
 

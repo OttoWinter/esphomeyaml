@@ -16,14 +16,15 @@ class ST7920;
 using st7920_writer_t = std::function<void(ST7920 &)>;
 
 class ST7920 : public PollingComponent,
-      public display::DisplayBuffer,
-      public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_HIGH, spi::CLOCK_PHASE_TRAILING, spi::DATA_RATE_1MHZ> {
+               public display::DisplayBuffer,
+               public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_HIGH, spi::CLOCK_PHASE_TRAILING,
+                                     spi::DATA_RATE_1MHZ> {
  public:
   void set_writer(st7920_writer_t &&writer) { this->writer_local_ = writer; }
   void set_rs_pin(GPIOPin *rs_pin) { this->rs_pin_ = rs_pin; }
   void set_height(uint16_t height) { this->height_ = height; }
   void set_width(uint16_t width) { this->width_ = width; }
-  
+
   // ========== INTERNAL METHODS ==========
   // (In most use cases you won't need these)
   void setup() override;
@@ -32,9 +33,8 @@ class ST7920 : public PollingComponent,
   void update() override;
   void loop() override;
   void fill(Color color) override;
-  
   void write_display_data();
-  
+
  protected:  
   void draw_absolute_pixel_internal(int x, int y, Color color) override;
   int get_height_internal() override;
