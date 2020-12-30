@@ -1,5 +1,6 @@
 #include "st7920.h"
 #include "esphome/core/log.h"
+#include "esphome/core/application.h"
 #include "esphome/components/display/display_buffer.h"
 
 namespace esphome {
@@ -140,8 +141,8 @@ void ST7920::display_init_() {
   delay(12);                // >10 ms delay
   command_(LCD_ADDRINC);    // cursor increment right no shift
   command_(LCD_DISPLAYON);  // D=1, C=0, B=0
-  command_(LCD_EXTEND);     //LCD_EXTEND);
-  command_(LCD_GFXMODE);    //LCD_GFXMODE);
+  command_(LCD_EXTEND);     // LCD_EXTEND);
+  command_(LCD_GFXMODE);    // LCD_GFXMODE);
   write_display_data();
 }
 

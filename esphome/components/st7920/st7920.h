@@ -53,6 +53,5 @@ class ST7920 : public PollingComponent,
   optional<st7920_writer_t> writer_local_{};
 };
 
-
 }  // namespace st7920
 }  // namespace esphome
