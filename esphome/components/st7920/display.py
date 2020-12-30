@@ -6,6 +6,7 @@ from esphome.const import CONF_ID, CONF_LAMBDA, CONF_RS_PIN, CONF_WIDTH, CONF_HE
 
 AUTO_LOAD = ['display']
 DEPENDENCIES = ['spi']
+CODEOWNERS = ['@marsjan155']
 
 st7920_ns = cg.esphome_ns.namespace('st7920')
 ST7920 = st7920_ns.class_('ST7920', cg.PollingComponent, display.DisplayBuffer, spi.SPIDevice)
