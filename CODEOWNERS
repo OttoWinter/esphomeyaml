@@ -27,6 +27,7 @@ esphome/components/climate_ir/* @glmnet
 esphome/components/coolix/* @glmnet
 esphome/components/cover/* @esphome/core
 esphome/components/ct_clamp/* @jesserockz
+esphome/components/current_based/* @djwmarcx
 esphome/components/debug/* @OttoWinter
 esphome/components/dfplayer/* @glmnet
 esphome/components/dht/* @OttoWinter
