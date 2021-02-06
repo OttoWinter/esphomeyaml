@@ -77,12 +77,12 @@ CONFIG_SCHEMA = sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2).exte
         cv.Required(CONF_RISING_EDGE): COUNT_MODE_SCHEMA,
         cv.Required(CONF_FALLING_EDGE): COUNT_MODE_SCHEMA,
     }), validate_count_mode),
-    cv.Optional(CONF_HARDWARE_PULSECOUNTER, 
-                default=(True if CORE.is_esp32 else False)): validate_hardware_pulsecounter,
+    cv.Optional(CONF_HARDWARE_PULSECOUNTER,
+                default=bool(CORE.is_esp32)): validate_hardware_pulsecounter,
     cv.Optional(CONF_INTERNAL_FILTER, default='13us'): validate_internal_filter,
     cv.Optional(CONF_TOTAL): sensor.sensor_schema(UNIT_PULSES, ICON_PULSE, 0),
-
 }).extend(cv.polling_component_schema('60s'))
+
 
 def to_code(config):
     if config[CONF_HARDWARE_PULSECOUNTER]:
