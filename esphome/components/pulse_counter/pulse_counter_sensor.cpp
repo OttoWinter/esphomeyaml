@@ -127,7 +127,7 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
 }
 
 pulse_counter_t PulseCounterStorage::read_raw_value() {
-  pulse_counter_t counter;
+  pulse_counter_t counter = 0;
 #ifdef USE_SOFTWARE_PULSECOUNTER
   if (this->hardware == false) {
     counter = this->counter;
@@ -138,7 +138,7 @@ pulse_counter_t PulseCounterStorage::read_raw_value() {
   if (this->hardware == true) {
     pcnt_get_counter_value(this->pcnt_unit, &counter);
   }
-#endif  
+#endif
 
   pulse_counter_t ret = counter - this->last_value;
   this->last_value = counter;

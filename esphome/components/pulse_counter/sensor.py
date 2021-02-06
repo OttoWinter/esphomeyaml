@@ -46,13 +46,15 @@ def validate_count_mode(value):
                          "all!")
     return value
 
+
 NUMBER_OF_HARDWARE_PULSECOUNTERS = 0
 
+
 def validate_hardware_pulsecounter(value):
-    #Check if value is boolean
+    # Check if value is boolean
     global NUMBER_OF_HARDWARE_PULSECOUNTERS
     if not isinstance(value, (bool)):
-        raise cv.Invalid("Use only True, or False as value for hardware_pulsecounter")    
+        raise cv.Invalid("Use only True, or False as value for hardware_pulsecounter")
     if CORE.is_esp8266 and value:
         raise cv.Invalid("Only ESP32 supports hardware_pulsecounter")
     if value:
@@ -61,6 +63,7 @@ def validate_hardware_pulsecounter(value):
         else:
             raise cv.Invalid("Only 8 hardware pulse-counters are supported")
     return value
+
 
 CONF_HARDWARE_PULSECOUNTER = 'hardware_pulsecounter'
 
@@ -74,7 +77,8 @@ CONFIG_SCHEMA = sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2).exte
         cv.Required(CONF_RISING_EDGE): COUNT_MODE_SCHEMA,
         cv.Required(CONF_FALLING_EDGE): COUNT_MODE_SCHEMA,
     }), validate_count_mode),
-    cv.Optional(CONF_HARDWARE_PULSECOUNTER, default=(True if CORE.is_esp32 else False)): validate_hardware_pulsecounter,
+    cv.Optional(CONF_HARDWARE_PULSECOUNTER, 
+                default=(True if CORE.is_esp32 else False)): validate_hardware_pulsecounter,
     cv.Optional(CONF_INTERNAL_FILTER, default='13us'): validate_internal_filter,
     cv.Optional(CONF_TOTAL): sensor.sensor_schema(UNIT_PULSES, ICON_PULSE, 0),
 
@@ -83,7 +87,7 @@ CONFIG_SCHEMA = sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2).exte
 def to_code(config):
     if config[CONF_HARDWARE_PULSECOUNTER]:
         cg.add_define('USE_HARDWARE_PULSECOUNTER')
-    else: 
+    else:
         cg.add_define('USE_SOFTWARE_PULSECOUNTER')
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
