@@ -8,7 +8,7 @@ static const char *TAG = "pulse_counter";
 
 const char *EDGE_MODE_TO_STRING[] = {"DISABLE", "INCREMENT", "DECREMENT"};
 
-#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
+#ifdef USE_SOFTWARE_PULSECOUNTER
 void ICACHE_RAM_ATTR PulseCounterStorage::gpio_intr(PulseCounterStorage *arg) {
   const uint32_t now = micros();
   const bool discard = now - arg->last_pulse < arg->filter_us;
@@ -34,15 +34,15 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
   this->pin = pin;
   this->pin->setup();
 
-#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
-  if (this->slow == true ) {
+#ifdef USE_SOFTWARE_PULSECOUNTER
+  if (this->hardware == false) {
     this->isr_pin = this->pin->to_isr();
     this->pin->attach_interrupt(PulseCounterStorage::gpio_intr, this, CHANGE);
   }
 #endif
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
-  if (this->slow == false ) {
+#ifdef USE_HARDWARE_PULSECOUNTER
+  if (this->hardware == true) {
     this->pcnt_unit = next_pcnt_unit;
     next_pcnt_unit = pcnt_unit_t(int(next_pcnt_unit) + 1);  // NOLINT
 
@@ -128,14 +128,14 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
 
 pulse_counter_t PulseCounterStorage::read_raw_value() {
   pulse_counter_t counter;
-#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
-  if (this->slow == true ) {
+#ifdef USE_SOFTWARE_PULSECOUNTER
+  if (this->hardware == false) {
     counter = this->counter;
   }
 #endif
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
-  if (this->slow == false ) {
+#ifdef USE_HARDWARE_PULSECOUNTER
+  if (this->hardware == true) {
     pcnt_get_counter_value(this->pcnt_unit, &counter);
   }
 #endif  
@@ -176,7 +176,7 @@ void PulseCounterSensor::update() {
   }
 }
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
+#ifdef USE_HARDWARE_PULSECOUNTER
 pcnt_unit_t next_pcnt_unit = PCNT_UNIT_0;
 #endif
 

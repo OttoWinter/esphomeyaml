@@ -46,23 +46,23 @@ def validate_count_mode(value):
                          "all!")
     return value
 
-NUMBER_OF_FAST_PULSECOUNTERS = 0
+NUMBER_OF_HARDWARE_PULSECOUNTERS = 0
 
-def validate_slow_pulsecounter(value):
+def validate_hardware_pulsecounter(value):
     #Check if value is boolean
-    global NUMBER_OF_FAST_PULSECOUNTERS
+    global NUMBER_OF_HARDWARE_PULSECOUNTERS
     if not isinstance(value, (bool)):
-        raise cv.Invalid("Use only True, or False as value for slow")    
-    if CORE.is_esp8266 and not value:
-        raise cv.Invalid("Only ESP32 supports the fast pulse-counter mode")
-    if not value:
-        if NUMBER_OF_FAST_PULSECOUNTERS < 8:
-            NUMBER_OF_FAST_PULSECOUNTERS += 1
+        raise cv.Invalid("Use only True, or False as value for hardware_pulsecounter")    
+    if CORE.is_esp8266 and value:
+        raise cv.Invalid("Only ESP32 supports hardware_pulsecounter")
+    if value:
+        if NUMBER_OF_HARDWARE_PULSECOUNTERS < 8:
+            NUMBER_OF_HARDWARE_PULSECOUNTERS += 1
         else:
-            raise cv.Invalid("Only 8 fast pulse-counters are supported")
+            raise cv.Invalid("Only 8 hardware pulse-counters are supported")
     return value
 
-CONF_SLOW_PULSECOUNTER = 'slow'
+CONF_HARDWARE_PULSECOUNTER = 'hardware_pulsecounter'
 
 CONFIG_SCHEMA = sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2).extend({
     cv.GenerateID(): cv.declare_id(PulseCounterSensor),
@@ -74,17 +74,17 @@ CONFIG_SCHEMA = sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2).exte
         cv.Required(CONF_RISING_EDGE): COUNT_MODE_SCHEMA,
         cv.Required(CONF_FALLING_EDGE): COUNT_MODE_SCHEMA,
     }), validate_count_mode),
-    cv.Optional(CONF_SLOW_PULSECOUNTER, default=(False if CORE.is_esp32 else True)): validate_slow_pulsecounter,
+    cv.Optional(CONF_HARDWARE_PULSECOUNTER, default=(True if CORE.is_esp32 else False)): validate_hardware_pulsecounter,
     cv.Optional(CONF_INTERNAL_FILTER, default='13us'): validate_internal_filter,
     cv.Optional(CONF_TOTAL): sensor.sensor_schema(UNIT_PULSES, ICON_PULSE, 0),
 
 }).extend(cv.polling_component_schema('60s'))
 
 def to_code(config):
-    if config[CONF_SLOW_PULSECOUNTER]:
-        cg.add_define('USE_SLOW_PULSECOUNTER')
+    if config[CONF_HARDWARE_PULSECOUNTER]:
+        cg.add_define('USE_HARDWARE_PULSECOUNTER')
     else: 
-        cg.add_define('USE_FAST_PULSECOUNTER')
+        cg.add_define('USE_SOFTWARE_PULSECOUNTER')
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
     yield sensor.register_sensor(var, config)
@@ -95,7 +95,7 @@ def to_code(config):
     cg.add(var.set_rising_edge_mode(count[CONF_RISING_EDGE]))
     cg.add(var.set_falling_edge_mode(count[CONF_FALLING_EDGE]))
     cg.add(var.set_filter_us(config[CONF_INTERNAL_FILTER]))
-    cg.add(var.set_slow_mode(config[CONF_SLOW_PULSECOUNTER]))
+    cg.add(var.set_hardware_pulsecounter(config[CONF_HARDWARE_PULSECOUNTER]))
 
     if CONF_TOTAL in config:
         sens = yield sensor.new_sensor(config[CONF_TOTAL])

@@ -5,7 +5,7 @@
 #include "esphome/core/defines.h"
 #include "esphome/components/sensor/sensor.h"
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
+#ifdef USE_HARDWARE_PULSECOUNTER
 #include <driver/pcnt.h>
 #endif
 
@@ -18,7 +18,7 @@ enum PulseCounterCountMode {
   PULSE_COUNTER_DECREMENT,
 };
 
-#if defined USE_FAST_PULSECOUNTER
+#ifdef USE_HARDWARE_PULSECOUNTER
 using pulse_counter_t = int16_t;
 #else
 using pulse_counter_t = int32_t;
@@ -30,22 +30,26 @@ struct PulseCounterStorage {
 
   static void gpio_intr(PulseCounterStorage *arg);
 
-#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
+#ifdef USE_SOFTWARE_PULSECOUNTER
   volatile pulse_counter_t counter{0};
   volatile uint32_t last_pulse{0};
 #endif
 
   GPIOPin *pin;
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
+#ifdef USE_HARDWARE_PULSECOUNTER
   pcnt_unit_t pcnt_unit;
 #endif
-#if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
+#ifdef USE_SOFTWARE_PULSECOUNTER
   ISRInternalGPIOPin *isr_pin;
 #endif
   PulseCounterCountMode rising_edge_mode{PULSE_COUNTER_INCREMENT};
   PulseCounterCountMode falling_edge_mode{PULSE_COUNTER_DISABLE};
   uint32_t filter_us{0};
-  bool slow{true};
+#ifdef USE_HARDWARE_PULSECOUNTER
+  bool hardware{true};
+#else
+  bool hardware{false};
+#endif
   pulse_counter_t last_value{0};
 };
 
@@ -55,7 +59,7 @@ class PulseCounterSensor : public sensor::Sensor, public PollingComponent {
   void set_rising_edge_mode(PulseCounterCountMode mode) { storage_.rising_edge_mode = mode; }
   void set_falling_edge_mode(PulseCounterCountMode mode) { storage_.falling_edge_mode = mode; }
   void set_filter_us(uint32_t filter) { storage_.filter_us = filter; }
-  void set_slow_mode(bool mode) { storage_.slow = mode; }
+  void set_hardware_pulsecounter(bool mode) { storage_.hardware = mode; }
   void set_total_sensor(sensor::Sensor *total_sensor) { total_sensor_ = total_sensor; }
 
   /// Unit of measurement is "pulses/min".
@@ -71,7 +75,7 @@ class PulseCounterSensor : public sensor::Sensor, public PollingComponent {
   sensor::Sensor *total_sensor_;
 };
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
+#ifdef USE_HARDWARE_PULSECOUNTER
 extern pcnt_unit_t next_pcnt_unit;
 #endif
 
