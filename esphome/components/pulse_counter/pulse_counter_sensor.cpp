@@ -41,83 +41,85 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
   }
 #endif
 
-#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER  
-  this->pcnt_unit = next_pcnt_unit;
-  next_pcnt_unit = pcnt_unit_t(int(next_pcnt_unit) + 1);  // NOLINT
+#if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
+  if (this->slow == false ) {
+    this->pcnt_unit = next_pcnt_unit;
+    next_pcnt_unit = pcnt_unit_t(int(next_pcnt_unit) + 1);  // NOLINT
 
-  ESP_LOGCONFIG(TAG, "    PCNT Unit Number: %u", this->pcnt_unit);
+    ESP_LOGCONFIG(TAG, "    PCNT Unit Number: %u", this->pcnt_unit);
 
-  pcnt_count_mode_t rising = PCNT_COUNT_DIS, falling = PCNT_COUNT_DIS;
-  switch (this->rising_edge_mode) {
-    case PULSE_COUNTER_DISABLE:
-      rising = PCNT_COUNT_DIS;
-      break;
-    case PULSE_COUNTER_INCREMENT:
-      rising = PCNT_COUNT_INC;
-      break;
-    case PULSE_COUNTER_DECREMENT:
-      rising = PCNT_COUNT_DEC;
-      break;
-  }
-  switch (this->falling_edge_mode) {
-    case PULSE_COUNTER_DISABLE:
-      falling = PCNT_COUNT_DIS;
-      break;
-    case PULSE_COUNTER_INCREMENT:
-      falling = PCNT_COUNT_INC;
-      break;
-    case PULSE_COUNTER_DECREMENT:
-      falling = PCNT_COUNT_DEC;
-      break;
-  }
+    pcnt_count_mode_t rising = PCNT_COUNT_DIS, falling = PCNT_COUNT_DIS;
+    switch (this->rising_edge_mode) {
+      case PULSE_COUNTER_DISABLE:
+        rising = PCNT_COUNT_DIS;
+        break;
+      case PULSE_COUNTER_INCREMENT:
+        rising = PCNT_COUNT_INC;
+        break;
+      case PULSE_COUNTER_DECREMENT:
+        rising = PCNT_COUNT_DEC;
+        break;
+    }
+    switch (this->falling_edge_mode) {
+      case PULSE_COUNTER_DISABLE:
+        falling = PCNT_COUNT_DIS;
+        break;
+      case PULSE_COUNTER_INCREMENT:
+        falling = PCNT_COUNT_INC;
+        break;
+      case PULSE_COUNTER_DECREMENT:
+        falling = PCNT_COUNT_DEC;
+        break;
+    }
 
-  pcnt_config_t pcnt_config = {
-      .pulse_gpio_num = this->pin->get_pin(),
-      .ctrl_gpio_num = PCNT_PIN_NOT_USED,
-      .lctrl_mode = PCNT_MODE_KEEP,
-      .hctrl_mode = PCNT_MODE_KEEP,
-      .pos_mode = rising,
-      .neg_mode = falling,
-      .counter_h_lim = 0,
-      .counter_l_lim = 0,
-      .unit = this->pcnt_unit,
-      .channel = PCNT_CHANNEL_0,
-  };
-  esp_err_t error = pcnt_unit_config(&pcnt_config);
-  if (error != ESP_OK) {
-    ESP_LOGE(TAG, "Configuring Pulse Counter failed: %s", esp_err_to_name(error));
-    return false;
-  }
-
-  if (this->filter_us != 0) {
-    uint16_t filter_val = std::min(this->filter_us * 80u, 1023u);
-    ESP_LOGCONFIG(TAG, "    Filter Value: %uus (val=%u)", this->filter_us, filter_val);
-    error = pcnt_set_filter_value(this->pcnt_unit, filter_val);
+    pcnt_config_t pcnt_config = {
+        .pulse_gpio_num = this->pin->get_pin(),
+        .ctrl_gpio_num = PCNT_PIN_NOT_USED,
+        .lctrl_mode = PCNT_MODE_KEEP,
+        .hctrl_mode = PCNT_MODE_KEEP,
+        .pos_mode = rising,
+        .neg_mode = falling,
+        .counter_h_lim = 0,
+        .counter_l_lim = 0,
+        .unit = this->pcnt_unit,
+        .channel = PCNT_CHANNEL_0,
+    };
+    esp_err_t error = pcnt_unit_config(&pcnt_config);
     if (error != ESP_OK) {
-      ESP_LOGE(TAG, "Setting filter value failed: %s", esp_err_to_name(error));
+      ESP_LOGE(TAG, "Configuring Pulse Counter failed: %s", esp_err_to_name(error));
       return false;
     }
-    error = pcnt_filter_enable(this->pcnt_unit);
+
+    if (this->filter_us != 0) {
+      uint16_t filter_val = std::min(this->filter_us * 80u, 1023u);
+      ESP_LOGCONFIG(TAG, "    Filter Value: %uus (val=%u)", this->filter_us, filter_val);
+      error = pcnt_set_filter_value(this->pcnt_unit, filter_val);
+      if (error != ESP_OK) {
+        ESP_LOGE(TAG, "Setting filter value failed: %s", esp_err_to_name(error));
+        return false;
+      }
+      error = pcnt_filter_enable(this->pcnt_unit);
+      if (error != ESP_OK) {
+        ESP_LOGE(TAG, "Enabling filter failed: %s", esp_err_to_name(error));
+        return false;
+      }
+    }
+
+    error = pcnt_counter_pause(this->pcnt_unit);
     if (error != ESP_OK) {
-      ESP_LOGE(TAG, "Enabling filter failed: %s", esp_err_to_name(error));
+      ESP_LOGE(TAG, "Pausing pulse counter failed: %s", esp_err_to_name(error));
       return false;
     }
-  }
-
-  error = pcnt_counter_pause(this->pcnt_unit);
-  if (error != ESP_OK) {
-    ESP_LOGE(TAG, "Pausing pulse counter failed: %s", esp_err_to_name(error));
-    return false;
-  }
-  error = pcnt_counter_clear(this->pcnt_unit);
-  if (error != ESP_OK) {
-    ESP_LOGE(TAG, "Clearing pulse counter failed: %s", esp_err_to_name(error));
-    return false;
-  }
-  error = pcnt_counter_resume(this->pcnt_unit);
-  if (error != ESP_OK) {
-    ESP_LOGE(TAG, "Resuming pulse counter failed: %s", esp_err_to_name(error));
-    return false;
+    error = pcnt_counter_clear(this->pcnt_unit);
+    if (error != ESP_OK) {
+      ESP_LOGE(TAG, "Clearing pulse counter failed: %s", esp_err_to_name(error));
+      return false;
+    }
+    error = pcnt_counter_resume(this->pcnt_unit);
+    if (error != ESP_OK) {
+      ESP_LOGE(TAG, "Resuming pulse counter failed: %s", esp_err_to_name(error));
+      return false;
+    }
   }
 #endif
 
@@ -127,11 +129,15 @@ bool PulseCounterStorage::pulse_counter_setup(GPIOPin *pin) {
 pulse_counter_t PulseCounterStorage::read_raw_value() {
   pulse_counter_t counter;
 #if defined ARDUINO_ARCH_ESP8266 || defined USE_SLOW_PULSECOUNTER
-  counter = this->counter;
+  if (this->slow == true ) {
+    counter = this->counter;
+  }
 #endif
 
 #if defined ARDUINO_ARCH_ESP32 && defined USE_FAST_PULSECOUNTER
-  pcnt_get_counter_value(this->pcnt_unit, &counter);
+  if (this->slow == false ) {
+    pcnt_get_counter_value(this->pcnt_unit, &counter);
+  }
 #endif  
 
   pulse_counter_t ret = counter - this->last_value;
