@@ -426,6 +426,31 @@ sensor:
     id: ph_ezo
     address: 99
     unit_of_measurement: 'pH'
+  - platform: sdm220m
+    current:
+      name: 'Current'
+    voltage:
+      name: 'Voltage'
+    import_active_energy:
+      name: 'Energy in kWh'
+    active_power:
+      name: 'Power'
+    frequency:
+      name: 'Frequency'
+    power_factor:
+      name: 'Power Factor'
+    apparent_power:
+      name: 'Apparent Power'
+    reactive_power:
+      name: 'Reactive Power'
+    phase_angle:
+      name: 'Phase Angle'
+    export_active_energy:
+      name: 'Export Active Energy'
+    import_reactive_energy:
+      name: 'Import Reactive Energy'
+    export_reactive_energy:
+      name: 'Export Reactive Energy'
 
 time:
   - platform: homeassistant
