@@ -1,4 +1,5 @@
 import collections
+import copy
 import importlib
 import logging
 import re
@@ -23,6 +24,7 @@ from esphome.yaml_util import is_secret, ESPHomeDataBase, ESPForceValue
 from esphome.voluptuous_schema import ExtraKeysInvalid
 
 _LOGGER = logging.getLogger(__name__)
+OUTPUT_PATH_ROOT = ([], '')
 
 _COMPONENT_CACHE = {}
 
@@ -394,19 +396,11 @@ def recursive_check_replaceme(value):
 
 def validate_config(config, command_line_substitutions):
     result = Config()
+    # Adding root path to make error reporter render errors not related to any
+    # of the domains e.g. missing esphome section
+    result.output_paths.append(OUTPUT_PATH_ROOT)
 
-    # 0. Load packages
-    if CONF_PACKAGES in config:
-        from esphome.components.packages import do_packages_pass
-        result.add_output_path([CONF_PACKAGES], CONF_PACKAGES)
-        try:
-            config = do_packages_pass(config)
-        except vol.Invalid as err:
-            result.update(config)
-            result.add_error(err)
-            return result
-
-    # 1. Load substitutions
+    # 0. Load substitutions
     if CONF_SUBSTITUTIONS in config:
         from esphome.components import substitutions
         result[CONF_SUBSTITUTIONS] = {**config[CONF_SUBSTITUTIONS], **command_line_substitutions}
@@ -416,6 +410,18 @@ def validate_config(config, command_line_substitutions):
         except vol.Invalid as err:
             result.add_error(err)
             return result
+
+    # 1. Load packages
+    if CONF_PACKAGES in config:
+        from esphome.components.packages import do_packages_pass
+        result.add_output_path([CONF_PACKAGES], CONF_PACKAGES)
+        try:
+            config = do_packages_pass(config)
+        except vol.Invalid as err:
+            result.update(config)
+            result.add_error(err)
+            return result
+    CORE.resolved_config = copy.deepcopy(config)
 
     # 1.1. Check for REPLACEME special value
     try:
@@ -849,8 +855,9 @@ def read_config(command_line_substitutions):
             if not res.is_in_error_path(path):
                 continue
 
-            safe_print(color('bold_red', f'{domain}:') + ' ' +
-                       (line_info(res.get_nested_item(path)) or ''))
+            if len(domain) > 0:     # Skip printing domain and line for root
+                safe_print(color('bold_red', f'{domain}:') + ' ' +
+                           (line_info(res.get_nested_item(path)) or ''))
             safe_print(indent(dump_dict(res, path)[0]))
         return None
     return OrderedDict(res)

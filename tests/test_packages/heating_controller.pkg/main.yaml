@@ -1,0 +1,25 @@
+esphome:
+  name: "{{ pkg.params.node_name }}"
+  platform: ESP32
+  board: wemos_d1_mini32
+  build_path: ./build/{{ pkg.params.node_name }}
+
+packages:
+  subpackage: subpackage.yaml
+
+# I2C Bus
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: True
+  frequency: 100kHz
+
+# Enable logging
+logger:
+  level: "{{ pkg.params.log_level }}"
+
+# Dallas
+dallas:
+  - pin: GPIO26
+    id: dallas_hub0
+    update_interval: 3min
