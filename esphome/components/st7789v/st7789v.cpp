@@ -134,10 +134,10 @@ void ST7789V::update() {
 void ST7789V::loop() {}
 
 void ST7789V::write_display_data() {
-  uint16_t x1 = 52;   // _offsetx
-  uint16_t x2 = 186;  // _offsetx
-  uint16_t y1 = 40;   // _offsety
-  uint16_t y2 = 279;  // _offsety
+  uint16_t x1 = this->offset_height_;
+  uint16_t x2 = x1 + get_height_internal() - 1;
+  uint16_t y1 = this->offset_width_;
+  uint16_t y2 = y1 + get_width_internal() - 1;
 
   this->enable();
 
@@ -156,7 +156,19 @@ void ST7789V::write_display_data() {
   this->write_byte(ST7789_RAMWR);
   this->dc_pin_->digital_write(true);
 
-  this->write_array(this->buffer_, this->get_buffer_length_());
+  if (this->eightbitcolor_) {
+    for (int line = 0; line < this->get_buffer_length_(); line = line + this->get_width_internal()) {
+      for (int index = 0; index < this->get_width_internal(); ++index) {
+        auto color = Color(this->buffer_[index + line], Color::ColorOrder::COLOR_ORDER_RGB,
+                           Color::ColorBitness::COLOR_BITNESS_332, true)
+                         .to_565();
+        this->write_byte((color >> 8) & 0xff);
+        this->write_byte(color & 0xff);
+      }
+    }
+  } else {
+    this->write_array(this->buffer_, this->get_buffer_length_());
+  }
 
   this->disable();
 }
@@ -219,15 +231,14 @@ void ST7789V::write_color_(uint16_t color, uint16_t size) {
   return write_array(BYTE, size * 2);
 }
 
-int ST7789V::get_height_internal() {
-  return 240;  // 320;
-}
+int ST7789V::get_height_internal() { return this->height_; }
 
-int ST7789V::get_width_internal() {
-  return 135;  // 240;
-}
+int ST7789V::get_width_internal() { return this->width_; }
 
 size_t ST7789V::get_buffer_length_() {
+  if (this->eightbitcolor_) {
+    return size_t(this->get_width_internal()) * size_t(this->get_height_internal());
+  }
   return size_t(this->get_width_internal()) * size_t(this->get_height_internal()) * 2;
 }
 
@@ -263,11 +274,16 @@ void HOT ST7789V::draw_absolute_pixel_internal(int x, int y, Color color) {
   if (x >= this->get_width_internal() || x < 0 || y >= this->get_height_internal() || y < 0)
     return;
 
-  auto color565 = color.to_rgb_565();
-
-  uint16_t pos = (x + y * this->get_width_internal()) * 2;
-  this->buffer_[pos++] = (color565 >> 8) & 0xff;
-  this->buffer_[pos] = color565 & 0xff;
+  if (this->eightbitcolor_) {
+    const uint32_t color332 = color.to_332();
+    uint32_t pos = (x + y * this->get_width_internal());
+    this->buffer_[pos] = color332;
+  } else {
+    const uint32_t color565 = color.to_565();
+    uint32_t pos = (x + y * this->get_width_internal()) * 2;
+    this->buffer_[pos++] = (color565 >> 8) & 0xff;
+    this->buffer_[pos] = color565 & 0xff;
+  }
 }
 
 }  // namespace st7789v
