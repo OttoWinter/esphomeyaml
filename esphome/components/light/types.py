@@ -46,3 +46,4 @@ AddressableRandomTwinkleEffect = light_ns.class_('AddressableRandomTwinkleEffect
                                                  AddressableLightEffect)
 AddressableFireworksEffect = light_ns.class_('AddressableFireworksEffect', AddressableLightEffect)
 AddressableFlickerEffect = light_ns.class_('AddressableFlickerEffect', AddressableLightEffect)
+AddressableGradientEffect = light_ns.class_('AddressableGradientEffect', AddressableLightEffect)
