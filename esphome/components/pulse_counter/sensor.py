@@ -105,7 +105,7 @@ CONFIG_SCHEMA = (
                 ),
                 validate_count_mode,
             ),
-            cv.Optional(CONF_HARDWARE_PULSECOUNTER, default=bool(CORE.is_esp32)): 
+            cv.Optional(CONF_HARDWARE_PULSECOUNTER, default=bool(CORE.is_esp32)):
                 validate_hardware_pulsecounter,
             cv.Optional(CONF_INTERNAL_FILTER, default="13us"): validate_internal_filter,
             cv.Optional(CONF_TOTAL): sensor.sensor_schema(
