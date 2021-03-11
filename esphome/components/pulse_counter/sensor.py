@@ -81,7 +81,7 @@ def validate_hardware_pulsecounter(value):
     return value
 
 
-CONF_HARDWARE_PULSECOUNTER = 'hardware_pulsecounter'
+CONF_HARDWARE_PULSECOUNTER = "hardware_pulsecounter"
 
 
 CONFIG_SCHEMA = (
@@ -105,8 +105,9 @@ CONFIG_SCHEMA = (
                 ),
                 validate_count_mode,
             ),
-            cv.Optional(CONF_HARDWARE_PULSECOUNTER, default=bool(CORE.is_esp32)):
-                validate_hardware_pulsecounter,
+            cv.Optional(
+                CONF_HARDWARE_PULSECOUNTER, default=bool(CORE.is_esp32)
+            ): validate_hardware_pulsecounter,
             cv.Optional(CONF_INTERNAL_FILTER, default="13us"): validate_internal_filter,
             cv.Optional(CONF_TOTAL): sensor.sensor_schema(
                 UNIT_PULSES, ICON_PULSE, 0, DEVICE_CLASS_EMPTY
@@ -119,9 +120,9 @@ CONFIG_SCHEMA = (
 
 def to_code(config):
     if config[CONF_HARDWARE_PULSECOUNTER]:
-        cg.add_define('USE_HARDWARE_PULSECOUNTER')
+        cg.add_define("USE_HARDWARE_PULSECOUNTER")
     else:
-        cg.add_define('USE_SOFTWARE_PULSECOUNTER')
+        cg.add_define("USE_SOFTWARE_PULSECOUNTER")
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
     yield sensor.register_sensor(var, config)
