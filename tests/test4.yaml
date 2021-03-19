@@ -132,3 +132,4 @@ display:
       it.rectangle(3, 3, it.get_width()-6, it.get_height()-6, red);
     rotation: 0°
     update_interval: 16ms
+
