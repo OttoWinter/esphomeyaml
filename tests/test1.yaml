@@ -626,6 +626,13 @@ sensor:
       falling_edge: DECREMENT
     internal_filter: 13us
     update_interval: 15s
+  - platform: pulse_meter
+    name: 'Pulse Meter'
+    pin: GPIO12
+    internal_filter: 100ms
+    timeout: 2 min
+    total:
+      name: 'Pulse Meter Total'
   - platform: rotary_encoder
     name: 'Rotary Encoder'
     id: rotary_encoder1
@@ -1861,24 +1868,6 @@ display:
     cs_pin: GPIO23
     dc_pin: GPIO23
     reset_pin: GPIO23
-    lambda: |-
-      it.rectangle(0, 0, it.get_width(), it.get_height());
-  - platform: waveshare_epaper
-    cs_pin: GPIO23
-    dc_pin: GPIO23
-    busy_pin: GPIO23
-    reset_pin: GPIO23
-    model: 2.90in
-    full_update_every: 30
-    lambda: |-
-      it.rectangle(0, 0, it.get_width(), it.get_height());
-  - platform: waveshare_epaper
-    cs_pin: GPIO23
-    dc_pin: GPIO23
-    busy_pin: GPIO23
-    reset_pin: GPIO23
-    model: 2.90inv2
-    full_update_every: 30
     lambda: |-
       it.rectangle(0, 0, it.get_width(), it.get_height());
   - platform: st7789v
