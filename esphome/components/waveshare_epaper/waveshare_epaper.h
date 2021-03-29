@@ -7,6 +7,15 @@
 namespace esphome {
 namespace waveshare_epaper {
 
+static const Color WAVESHARE_BLACK(0, 0, 0);
+static const Color WAVESHARE_WHITE(255, 255, 255);
+static const Color WAVESHARE_GREEN(0, 255, 0);
+static const Color WAVESHARE_BLUE(0, 0, 255);
+static const Color WAVESHARE_RED(255, 0, 0);
+static const Color WAVESHARE_YELLOW(255, 255, 0);
+static const Color WAVESHARE_ORANGE(255, 127, 0);
+static const Color WAVESHARE_BLANK(0x123456);  // Anything that isn't one of the above will do.
+
 class WaveshareEPaper : public PollingComponent,
                         public display::DisplayBuffer,
                         public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW,
@@ -34,11 +43,12 @@ class WaveshareEPaper : public PollingComponent,
   }
 
   void on_safe_shutdown() override;
+  virtual bool use_buffer() { return false; }
+  virtual bool wait_until_idle();
+  virtual uint32_t get_buffer_length();
 
  protected:
   void draw_absolute_pixel_internal(int x, int y, Color color) override;
-
-  bool wait_until_idle_();
 
   void setup_pins_();
 
@@ -50,8 +60,6 @@ class WaveshareEPaper : public PollingComponent,
       delay(200);  // NOLINT
     }
   }
-
-  uint32_t get_buffer_length_();
 
   void start_command_();
   void end_command_();
@@ -68,7 +76,6 @@ enum WaveshareEPaperTypeAModel {
   WAVESHARE_EPAPER_1_54_IN = 0,
   WAVESHARE_EPAPER_2_13_IN,
   WAVESHARE_EPAPER_2_9_IN,
-  WAVESHARE_EPAPER_2_9_IN_V2,
   TTGO_EPAPER_2_13_IN,
   TTGO_EPAPER_2_13_IN_B73,
   TTGO_EPAPER_2_13_IN_B1,
@@ -85,15 +92,9 @@ class WaveshareEPaperTypeA : public WaveshareEPaper {
   void display() override;
 
   void deep_sleep() override {
-    if (this->model_ == WAVESHARE_EPAPER_2_9_IN_V2) {
-      // COMMAND DEEP SLEEP MODE
-      this->command(0x10);
-      this->data(0x01);
-    } else {
-      // COMMAND DEEP SLEEP MODE
-      this->command(0x10);
-    }
-    this->wait_until_idle_();
+    // COMMAND DEEP SLEEP MODE
+    this->command(0x10);
+    this->wait_until_idle();
   }
 
   void set_full_update_every(uint32_t full_update_every);
@@ -189,7 +190,7 @@ class WaveshareEPaper4P2In : public WaveshareEPaper {
 
     // COMMAND POWER OFF
     this->command(0x02);
-    this->wait_until_idle_();
+    this->wait_until_idle();
     // COMMAND DEEP SLEEP
     this->command(0x07);
     this->data(0xA5);  // check byte
@@ -212,7 +213,7 @@ class WaveshareEPaper5P8In : public WaveshareEPaper {
   void deep_sleep() override {
     // COMMAND POWER OFF
     this->command(0x02);
-    this->wait_until_idle_();
+    this->wait_until_idle();
     // COMMAND DEEP SLEEP
     this->command(0x07);
     this->data(0xA5);  // check byte
@@ -235,7 +236,7 @@ class WaveshareEPaper7P5In : public WaveshareEPaper {
   void deep_sleep() override {
     // COMMAND POWER OFF
     this->command(0x02);
-    this->wait_until_idle_();
+    this->wait_until_idle();
     // COMMAND DEEP SLEEP
     this->command(0x07);
     this->data(0xA5);  // check byte
@@ -258,7 +259,7 @@ class WaveshareEPaper7P5InV2 : public WaveshareEPaper {
   void deep_sleep() override {
     // COMMAND POWER OFF
     this->command(0x02);
-    this->wait_until_idle_();
+    this->wait_until_idle();
     // COMMAND DEEP SLEEP
     this->command(0x07);
     this->data(0xA5);  // check byte
@@ -268,6 +269,58 @@ class WaveshareEPaper7P5InV2 : public WaveshareEPaper {
   int get_width_internal() override;
 
   int get_height_internal() override;
+};
+
+enum WaveshareEPaperTypeFModel {
+  WAVESHARE_ACEP_5_65_IN = 0,
+};
+
+class WaveshareEPaperTypeF : public WaveshareEPaper {
+ public:
+  WaveshareEPaperTypeF(WaveshareEPaperTypeFModel model);
+
+  void initialize() override;
+
+  void dump_config() override;
+
+  void display() override;
+
+  void fill(Color color) override;
+
+  void deep_sleep() override {
+    if (this->reset_pin_ != nullptr) {
+      delay(100);  // NOLINT
+      this->command(0x07);
+      this->data(0xA5);
+      delay(100);  // NOLINT
+      this->reset_pin_->digital_write(false);
+    }
+  }
+
+  bool use_buffer() override { return true; }
+
+ protected:
+  // virtual uint8_t color_(Color color);
+
+  uint8_t pixel_storage_size_ = 3;
+
+  void draw_absolute_pixel_internal(int x, int y, Color color) override;
+
+  void send_display_size_(uint16_t width, uint16_t height);
+
+  int get_width_internal() override;
+  int get_height_internal() override;
+
+  bool wait_until_idle() override;
+  bool wait_until_busy_();
+
+  WaveshareEPaperTypeFModel model_;
+
+  std::vector<Color> get_model_colors_() {
+    std::vector<Color> colors = {WAVESHARE_BLACK, WAVESHARE_WHITE,  WAVESHARE_GREEN,  WAVESHARE_BLUE,
+                                 WAVESHARE_RED,   WAVESHARE_YELLOW, WAVESHARE_ORANGE, WAVESHARE_BLANK};
+    return colors;
+  }
 };
 
 }  // namespace waveshare_epaper

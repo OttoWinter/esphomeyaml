@@ -1,3 +1,4 @@
+from esphome.core import coroutine
 from esphome import config_validation as cv
 from esphome import codegen as cg
 from esphome.const import CONF_BLUE, CONF_GREEN, CONF_ID, CONF_RED, CONF_WHITE
@@ -26,7 +27,8 @@ CONFIG_SCHEMA = cv.Schema(
 ).extend(cv.COMPONENT_SCHEMA)
 
 
-def to_code(config):
+@coroutine
+def color_string_from_config(config):
     r = 0
     if CONF_RED in config:
         r = int(config[CONF_RED] * 255)
@@ -51,7 +53,19 @@ def to_code(config):
     elif CONF_WHITE_INT in config:
         w = config[CONF_WHITE_INT]
 
+    return r, g, b, w
+
+
+def to_code(config):
+    color_return = yield color_string_from_config(config)
+
     cg.new_variable(
         config[CONF_ID],
-        cg.StructInitializer(ColorStruct, ("r", r), ("g", g), ("b", b), ("w", w)),
+        cg.StructInitializer(
+            ColorStruct,
+            ("r", color_return[0]),
+            ("g", color_return[1]),
+            ("b", color_return[2]),
+            ("w", color_return[3]),
+        ),
     )

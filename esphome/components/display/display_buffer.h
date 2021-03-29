@@ -3,7 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/automation.h"
-#include "display_color_utils.h"
+#include "buffer_base.h"
 
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
@@ -68,7 +68,7 @@ extern const Color COLOR_OFF;
 /// Turn the pixel ON.
 extern const Color COLOR_ON;
 
-enum ImageType { IMAGE_TYPE_BINARY = 0, IMAGE_TYPE_GRAYSCALE = 1, IMAGE_TYPE_RGB24 = 2 };
+enum ImageType { IMAGE_TYPE_BINARY = 0, IMAGE_TYPE_GRAYSCALE = 1, IMAGE_TYPE_RGB24 = 2, IMAGE_TYPE_INDEXED8 = 3 };
 
 enum DisplayRotation {
   DISPLAY_ROTATION_0_DEGREES = 0,
@@ -84,12 +84,45 @@ class DisplayPage;
 
 using display_writer_t = std::function<void(DisplayBuffer &)>;
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(USE_BUFFER)
+#define LOG_DISPLAY(prefix, type, obj) \
+  if (obj != nullptr) { \
+    ESP_LOGCONFIG(TAG, prefix type); \
+    ESP_LOGCONFIG(TAG, "%s  Rotations: %d °", prefix, obj->rotation_); \
+    ESP_LOGCONFIG(TAG, "%s  Dimensions: %dpx x %dpx", prefix, obj->get_width(), obj->get_height()); \
+    ESP_LOGCONFIG(TAG, "%s  Column Start: %d", prefix, this->col_start_); \
+    ESP_LOGCONFIG(TAG, "%s  Row Start:: %d", prefix, this->row_start_); \
+    ESP_LOGCONFIG(TAG, "%s  PSRAM Enabled: %s", prefix, TRUEFALSE(psramFound())); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer: %s", prefix, this->get_buffer_type_string().c_str()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Type: %d", prefix, this->get_buffer_type()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Length: %zu", prefix, this->get_buffer_length()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Size: %zu", prefix, this->get_buffer_size()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Pixel Size: %hhu", prefix, this->get_pixel_storage_size()); \
+  }
+
+#elif defined(USE_BUFFER)
+#define LOG_DISPLAY(prefix, type, obj) \
+  if (obj != nullptr) { \
+    ESP_LOGCONFIG(TAG, prefix type); \
+    ESP_LOGCONFIG(TAG, "%s  Rotations: %d °", prefix, obj->rotation_); \
+    ESP_LOGCONFIG(TAG, "%s  Dimensions: %dpx x %dpx", prefix, obj->get_width(), obj->get_height()); \
+    ESP_LOGCONFIG(TAG, "%s  Column Start: %d", prefix, this->col_start_); \
+    ESP_LOGCONFIG(TAG, "%s  Row Start: %d", prefix, this->row_start_); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer: %s", prefix, this->get_buffer_type_string().c_str()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Length: %zu", prefix, this->get_buffer_length()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Size: %zu", prefix, this->get_buffer_size()); \
+    ESP_LOGCONFIG(TAG, "%s  Buffer Pixel Size: %hhu", prefix, this->get_pixel_storage_size()); \
+  }
+
+#else
 #define LOG_DISPLAY(prefix, type, obj) \
   if (obj != nullptr) { \
     ESP_LOGCONFIG(TAG, prefix type); \
     ESP_LOGCONFIG(TAG, "%s  Rotations: %d °", prefix, obj->rotation_); \
     ESP_LOGCONFIG(TAG, "%s  Dimensions: %dpx x %dpx", prefix, obj->get_width(), obj->get_height()); \
   }
+
+#endif
 
 class DisplayBuffer {
  public:
@@ -104,6 +137,7 @@ class DisplayBuffer {
   int get_height();
   /// Set a single pixel at the specified coordinates to the given color.
   void draw_pixel_at(int x, int y, Color color = COLOR_ON);
+  void draw_pixel_at(int x, int y, uint8_t raw_value);
 
   /// Draw a straight line from the point [x1,y1] to [x2,y2] with the given color.
   void line(int x1, int y1, int x2, int y2, Color color = COLOR_ON);
@@ -299,20 +333,71 @@ class DisplayBuffer {
   /// Internal method to set the display rotation with.
   void set_rotation(DisplayRotation rotation);
 
+  void HOT set_buffer_base(display::BufferBase *buffer_base) { this->buffer_base_ = buffer_base; }
+
+  size_t get_buffer_length();
+  void set_pixel(int x, int y, Color color);
+  void set_pixel(int x, int y, uint8_t raw_value);
+  size_t get_buffer_size();
+  void fill_buffer(Color color);
+
+  // 565
+  uint16_t HOT get_pixel_to_565(int x, int y);
+  uint16_t HOT get_pixel_to_565(uint16_t pos);
+  // 666
+  uint32_t HOT get_pixel_to_666(int x, int y);
+  uint32_t HOT get_pixel_to_666(uint16_t pos);
+
+  bool init_buffer(int width, int height);
+  display::BufferType get_buffer_type() { return this->buffer_base_->get_buffer_type(); };
+  std::string get_buffer_type_string() { return BUFFER_TYPE_STRINGS[this->buffer_base_->get_buffer_type()]; }
+  uint8_t get_pixel_storage_size() { return this->buffer_base_->get_pixel_storage_size(); }
+
+  void set_driver_right_bit_aligned(bool driver_right_bit_aligned) {
+    this->buffer_base_->set_driver_right_bit_aligned(driver_right_bit_aligned);
+  }
+
+  virtual void set_device_width(uint16_t width) { this->buffer_base_->set_device_width(width); }
+  virtual void set_device_height(uint16_t height) { this->buffer_base_->set_device_height(height); }
+
+  uint16_t get_device_width() { return this->buffer_base_->get_device_width(); }
+  uint16_t get_device_height() { return this->buffer_base_->get_device_height(); }
+
+  virtual void set_col_start(uint16_t col_start) { this->col_start_ = col_start; }
+  virtual void set_row_start(uint16_t row_start) { this->row_start_ = row_start; }
+
+  uint16_t get_col_start() { return this->col_start_; }
+  uint16_t get_row_start() { return this->row_start_; }
+
+  std::vector<Color> get_model_colors() { return this->buffer_base_->get_model_colors(); }
+  bool has_pages = false;
+
  protected:
+  uint16_t col_start_ = 0, row_start_ = 0;
+
   void vprintf_(int x, int y, Font *font, Color color, TextAlign align, const char *format, va_list arg);
 
-  virtual void draw_absolute_pixel_internal(int x, int y, Color color) = 0;
+  virtual void HOT draw_absolute_pixel_internal(int x, int y, Color color) {
+    this->buffer_base_->set_pixel(x, y, color);
+  }
+
+  virtual void HOT draw_absolute_pixel_internal(int x, int y, uint8_t raw_value) {
+    this->buffer_base_->set_pixel(x, y, raw_value);
+  }
 
   virtual int get_height_internal() = 0;
 
   virtual int get_width_internal() = 0;
+
+  virtual void display_clear();
 
   void init_internal_(uint32_t buffer_length);
 
   void do_update_();
 
   uint8_t *buffer_{nullptr};
+  display::BufferBase *buffer_base_ = nullptr;
+
   DisplayRotation rotation_{DISPLAY_ROTATION_0_DEGREES};
   optional<display_writer_t> writer_{};
   DisplayPage *page_{nullptr};
@@ -389,7 +474,9 @@ class Image {
  public:
   Image(const uint8_t *data_start, int width, int height, ImageType type);
   virtual bool get_pixel(int x, int y) const;
+
   virtual Color get_color_pixel(int x, int y) const;
+  virtual uint8_t get_pixel_byte(int x, int y) const;
   virtual Color get_grayscale_pixel(int x, int y) const;
   int get_width() const;
   int get_height() const;

@@ -1,5 +1,4 @@
 #include "display_buffer.h"
-#include "esphome/core/color.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 
@@ -19,8 +18,22 @@ void DisplayBuffer::init_internal_(uint32_t buffer_length) {
   }
   this->clear();
 }
+
+bool DisplayBuffer::init_buffer(int width, int height) {
+  if (this->buffer_base_->is_buffer_set())
+    return true;
+
+  bool result = this->buffer_base_->init_buffer(width, height);
+  this->buffer_base_->set_is_buffer_set(result);
+
+  this->buffer_base_->reset_partials();
+
+  return result;
+}
+
 void DisplayBuffer::fill(Color color) { this->filled_rectangle(0, 0, this->get_width(), this->get_height(), color); }
 void DisplayBuffer::clear() { this->fill(COLOR_OFF); }
+void DisplayBuffer::display_clear() { this->clear(); }
 int DisplayBuffer::get_width() {
   switch (this->rotation_) {
     case DISPLAY_ROTATION_90_DEGREES:
@@ -62,6 +75,27 @@ void HOT DisplayBuffer::draw_pixel_at(int x, int y, Color color) {
       break;
   }
   this->draw_absolute_pixel_internal(x, y, color);
+  App.feed_wdt();
+}
+
+void HOT DisplayBuffer::draw_pixel_at(int x, int y, uint8_t raw_value) {
+  switch (this->rotation_) {
+    case DISPLAY_ROTATION_0_DEGREES:
+      break;
+    case DISPLAY_ROTATION_90_DEGREES:
+      std::swap(x, y);
+      x = this->get_width_internal() - x - 1;
+      break;
+    case DISPLAY_ROTATION_180_DEGREES:
+      x = this->get_width_internal() - x - 1;
+      y = this->get_height_internal() - y - 1;
+      break;
+    case DISPLAY_ROTATION_270_DEGREES:
+      std::swap(x, y);
+      y = this->get_height_internal() - y - 1;
+      break;
+  }
+  this->draw_absolute_pixel_internal(x, y, raw_value);
   App.feed_wdt();
 }
 void HOT DisplayBuffer::line(int x1, int y1, int x2, int y2, Color color) {
@@ -228,6 +262,16 @@ void DisplayBuffer::image(int x, int y, Image *image, Color color_on, Color colo
         }
       }
       break;
+    case IMAGE_TYPE_INDEXED8:
+      ESP_LOGD(TAG, "IMAGE_TYPE_INDEXED8 %d/%d", image->get_width(), image->get_height());
+      for (int img_x = 0; img_x < image->get_width(); img_x++) {
+        for (int img_y = 0; img_y < image->get_height(); img_y++) {
+          uint8_t raw_value = image->get_pixel_byte(img_x, img_y);
+          // ESP_LOGD(TAG, "IMAGE_TYPE_INDEXED8 draw_pixel_at %d", raw_value);
+          this->draw_pixel_at(x + img_x, y + img_y, raw_value);
+        }
+      }
+      break;
   }
 }
 
@@ -304,6 +348,8 @@ void DisplayBuffer::printf(int x, int y, Font *font, const char *format, ...) {
 }
 void DisplayBuffer::set_writer(display_writer_t &&writer) { this->writer_ = writer; }
 void DisplayBuffer::set_pages(std::vector<DisplayPage *> pages) {
+  this->has_pages = true;
+
   for (auto *page : pages)
     page->set_parent(this);
 
@@ -315,11 +361,25 @@ void DisplayBuffer::set_pages(std::vector<DisplayPage *> pages) {
   pages[pages.size() - 1]->set_next(pages[0]);
   this->show_page(pages[0]);
 }
+// Buffer helpers
+size_t DisplayBuffer::get_buffer_length() { return this->buffer_base_->get_buffer_length(); }
+void HOT DisplayBuffer::set_pixel(int x, int y, Color color) { this->buffer_base_->set_pixel(x, y, color); }
+void HOT DisplayBuffer::set_pixel(int x, int y, uint8_t raw_value) { this->buffer_base_->set_pixel(x, y, raw_value); }
+size_t DisplayBuffer::get_buffer_size() { return this->buffer_base_->get_buffer_size(); }
+void HOT DisplayBuffer::fill_buffer(Color color) { this->buffer_base_->fill_buffer(color); }
+
+// 565
+uint16_t HOT DisplayBuffer::get_pixel_to_565(int x, int y) { return this->buffer_base_->get_pixel_to_565(x, y); }
+uint16_t HOT DisplayBuffer::get_pixel_to_565(uint16_t pos) { return this->buffer_base_->get_pixel_to_565(pos); }
+// 666
+uint32_t HOT DisplayBuffer::get_pixel_to_666(int x, int y) { return this->buffer_base_->get_pixel_to_666(x, y); }
+uint32_t HOT DisplayBuffer::get_pixel_to_666(uint16_t pos) { return this->buffer_base_->get_pixel_to_666(pos); }
+
 void DisplayBuffer::show_page(DisplayPage *page) { this->page_ = page; }
 void DisplayBuffer::show_next_page() { this->page_->show_next(); }
 void DisplayBuffer::show_prev_page() { this->page_->show_prev(); }
 void DisplayBuffer::do_update_() {
-  this->clear();
+  this->display_clear();
   if (this->page_ != nullptr) {
     this->page_->get_writer()(*this);
   } else if (this->writer_.has_value()) {
@@ -451,6 +511,12 @@ bool Image::get_pixel(int x, int y) const {
   const uint32_t width_8 = ((this->width_ + 7u) / 8u) * 8u;
   const uint32_t pos = x + y * width_8;
   return pgm_read_byte(this->data_start_ + (pos / 8u)) & (0x80 >> (pos % 8u));
+}
+uint8_t Image::get_pixel_byte(int x, int y) const {
+  if (x < 0 || x >= this->width_ || y < 0 || y >= this->height_)
+    return 0;
+  const uint32_t pos = (x + y * this->width_);
+  return pgm_read_byte(this->data_start_ + pos);
 }
 Color Image::get_color_pixel(int x, int y) const {
   if (x < 0 || x >= this->width_ || y < 0 || y >= this->height_)
