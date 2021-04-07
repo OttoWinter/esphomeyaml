@@ -18,7 +18,7 @@ from esphome.const import (
     CONF_ESPHOME,
     CONF_PLATFORMIO_OPTIONS,
 )
-from esphome.core import CORE, EsphomeError, coroutine, coroutine_with_priority
+from esphome.core import CORE, EsphomeError, coroutine
 from esphome.helpers import color, indent
 from esphome.util import (
     run_external_command,
@@ -126,15 +126,16 @@ def wrap_to_code(name, comp):
     coro = coroutine(comp.to_code)
 
     @functools.wraps(comp.to_code)
-    @coroutine_with_priority(coro.priority)
-    def wrapped(conf):
+    async def wrapped(conf):
         cg.add(cg.LineComment(f"{name}:"))
         if comp.config_schema is not None:
             conf_str = yaml_util.dump(conf)
             conf_str = conf_str.replace("//", "")
             cg.add(cg.LineComment(indent(conf_str)))
-        yield coro(conf)
+        await coro(conf)
 
+    if hasattr(coro, "priority"):
+        wrapped.priority = coro.priority
     return wrapped
 
 
@@ -638,10 +639,10 @@ def run_esphome(argv):
         _LOGGER.error("Missing configuration parameter, see esphome --help.")
         return 1
 
-    if sys.version_info < (3, 6, 0):
+    if sys.version_info < (3, 7, 0):
         _LOGGER.error(
-            "You're running ESPHome with Python <3.6. ESPHome is no longer compatible "
-            "with this Python version. Please reinstall ESPHome with Python 3.6+"
+            "You're running ESPHome with Python <3.7. ESPHome is no longer compatible "
+            "with this Python version. Please reinstall ESPHome with Python 3.7+"
         )
         return 1
 
@@ -649,7 +650,7 @@ def run_esphome(argv):
         try:
             return PRE_CONFIG_ACTIONS[args.command](args)
         except EsphomeError as e:
-            _LOGGER.error(e)
+            _LOGGER.error(e, exc_info=args.verbose)
             return 1
 
     for conf_path in args.configuration:
@@ -667,7 +668,7 @@ def run_esphome(argv):
         try:
             rc = POST_CONFIG_ACTIONS[args.command](args, config)
         except EsphomeError as e:
-            _LOGGER.error(e)
+            _LOGGER.error(e, exc_info=args.verbose)
             return 1
         if rc != 0:
             return rc
