@@ -335,7 +335,7 @@ void Climate::save_state_() {
   }
   if (!traits.get_supported_custom_fan_modes().empty() && custom_fan_mode.has_value()) {
     state.uses_custom_fan_mode = true;
-    auto custom_fan_modes = traits.get_supported_custom_fan_modes();
+    auto &custom_fan_modes = traits.get_supported_custom_fan_modes();
     auto it = std::find(custom_fan_modes.begin(), custom_fan_modes.end(), this->custom_fan_mode.value());
     // only set custom fan mode if value exists, otherwise leave it as is
     if (it != custom_fan_modes.cend()) {
