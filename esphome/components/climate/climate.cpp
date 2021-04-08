@@ -179,7 +179,7 @@ ClimateCall &ClimateCall::set_fan_mode(const std::string &fan_mode) {
   } else if (str_equals_case_insensitive(fan_mode, "DIFFUSE")) {
     this->set_fan_mode(CLIMATE_FAN_DIFFUSE);
   } else {
-    std::vector<std::string> custom_fan_modes = this->parent_->get_traits().get_supported_custom_fan_modes();
+    auto &custom_fan_modes = this->parent_->get_traits().get_supported_custom_fan_modes();
     if (std::find(custom_fan_modes.begin(), custom_fan_modes.end(), fan_mode) != custom_fan_modes.end()) {
       this->custom_fan_mode_ = fan_mode;
       this->fan_mode_.reset();
