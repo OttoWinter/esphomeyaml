@@ -212,7 +212,7 @@ ClimateCall &ClimateCall::set_preset(const std::string &preset) {
   } else if (str_equals_case_insensitive(preset, "ACTIVITY")) {
     this->set_preset(CLIMATE_PRESET_ACTIVITY);
   } else {
-    std::vector<std::string> custom_presets = this->parent_->get_traits().get_supported_custom_presets();
+    auto &custom_presets = this->parent_->get_traits().get_supported_custom_presets();
     if (std::find(custom_presets.begin(), custom_presets.end(), preset) != custom_presets.end()) {
       this->custom_preset_ = preset;
       this->preset_.reset();
