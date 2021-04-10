@@ -873,6 +873,27 @@ sensor:
     id: ph_ezo
     address: 99
     unit_of_measurement: 'pH'
+    on_led:
+      - lambda: |-
+          ESP_LOGD("TEST","Triggered with %s", x);
+    on_device_information:
+      - lambda: |-
+          ESP_LOGD("TEST","Triggered with %s", x);
+    on_slope:
+      - lambda: |-
+          ESP_LOGD("TEST","Triggered with %s", x);
+    on_calibration:
+      - lambda: |-
+          ESP_LOGD("TEST","Triggered with %s", x);
+    on_t:
+      - lambda: |-
+          ESP_LOGD("TEST","Triggered with %s", x);
+  - platform: mcp3008
+    update_interval: 5s
+    mcp3008_id: 'mcp3008_hub'
+    id: freezer_temp_source
+    reference_voltage: 3.19
+    number: 0
 
 esp32_touch:
   setup_mode: False
@@ -2000,7 +2021,7 @@ tca9548a:
     multiplexer:
       id: multiplex0
       channel: 0
-    
+
 
 pcf8574:
   - id: 'pcf8574_hub'
