@@ -14,6 +14,7 @@ from . import Nextion, nextion_ns, nextion_ref
 from .base_component import (
     CONF_ON_SLEEP,
     CONF_ON_WAKE,
+    CONF_ON_SETUP,
     CONF_TFT_URL,
     CONF_TOUCH_SLEEP_TIMEOUT,
     CONF_WAKE_UP_PAGE,
@@ -25,6 +26,7 @@ CODEOWNERS = ["@senexcrenshaw"]
 DEPENDENCIES = ["uart"]
 AUTO_LOAD = ["binary_sensor", "switch", "sensor", "text_sensor"]
 
+SetupTrigger = nextion_ns.class_("SetupTrigger", automation.Trigger.template())
 SleepTrigger = nextion_ns.class_("SleepTrigger", automation.Trigger.template())
 WakeTrigger = nextion_ns.class_("WakeTrigger", automation.Trigger.template())
 
@@ -34,6 +36,11 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(Nextion),
             cv.Optional(CONF_TFT_URL): cv.string,
             cv.Optional(CONF_BRIGHTNESS, default=1.0): cv.percentage,
+            cv.Optional(CONF_ON_SETUP): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SetupTrigger),
+                }
+            ),
             cv.Optional(CONF_ON_SLEEP): automation.validate_automation(
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SleepTrigger),
@@ -83,6 +90,10 @@ def to_code(config):
         cg.add(var.set_auto_wake_on_touch_internal(config[CONF_AUTO_WAKE_ON_TOUCH]))
 
     yield display.register_display(var, config)
+
+    for conf in config.get(CONF_ON_SETUP, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        yield automation.build_automation(trigger, [], conf)
 
     for conf in config.get(CONF_ON_SLEEP, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
