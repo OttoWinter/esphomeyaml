@@ -8,6 +8,15 @@ from esphome.const import (
     CONF_PM_10_0,
     CONF_PM_1_0,
     CONF_PM_2_5,
+    CONF_PM_10_0_STD,
+    CONF_PM_1_0_STD,
+    CONF_PM_2_5_STD,
+    CONF_PM_0_3um,
+    CONF_PM_0_5um,
+    CONF_PM_1_0um,
+    CONF_PM_2_5um,
+    CONF_PM_5_0um,
+    CONF_PM_10_0um,
     CONF_TEMPERATURE,
     CONF_TYPE,
     DEVICE_CLASS_EMPTY,
@@ -17,6 +26,7 @@ from esphome.const import (
     ICON_EMPTY,
     UNIT_MICROGRAMS_PER_CUBIC_METER,
     UNIT_CELSIUS,
+    UNIT_COUNT_DECILITRE,
     UNIT_PERCENT,
 )
 
@@ -61,6 +71,24 @@ CONFIG_SCHEMA = (
         {
             cv.GenerateID(): cv.declare_id(PMSX003Component),
             cv.Required(CONF_TYPE): cv.enum(PMSX003_TYPES, upper=True),
+            cv.Optional(CONF_PM_1_0_STD): sensor.sensor_schema(
+                UNIT_MICROGRAMS_PER_CUBIC_METER,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_2_5_STD): sensor.sensor_schema(
+                UNIT_MICROGRAMS_PER_CUBIC_METER,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_10_0_STD): sensor.sensor_schema(
+                UNIT_MICROGRAMS_PER_CUBIC_METER,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
             cv.Optional(CONF_PM_1_0): sensor.sensor_schema(
                 UNIT_MICROGRAMS_PER_CUBIC_METER,
                 ICON_CHEMICAL_WEAPON,
@@ -75,6 +103,42 @@ CONFIG_SCHEMA = (
             ),
             cv.Optional(CONF_PM_10_0): sensor.sensor_schema(
                 UNIT_MICROGRAMS_PER_CUBIC_METER,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_0_3um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_0_5um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_1_0um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_2_5um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_5_0um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
+                ICON_CHEMICAL_WEAPON,
+                0,
+                DEVICE_CLASS_EMPTY,
+            ),
+            cv.Optional(CONF_PM_10_0um): sensor.sensor_schema(
+                UNIT_COUNT_DECILITRE,
                 ICON_CHEMICAL_WEAPON,
                 0,
                 DEVICE_CLASS_EMPTY,
@@ -105,6 +169,18 @@ def to_code(config):
 
     cg.add(var.set_type(config[CONF_TYPE]))
 
+    if CONF_PM_1_0_STD in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_1_0_STD])
+        cg.add(var.set_pm_1_0_std_sensor(sens))
+
+    if CONF_PM_2_5_STD in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_2_5_STD])
+        cg.add(var.set_pm_2_5_std_sensor(sens))
+
+    if CONF_PM_10_0_STD in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_10_0_STD])
+        cg.add(var.set_pm_10_0_std_sensor(sens))
+
     if CONF_PM_1_0 in config:
         sens = yield sensor.new_sensor(config[CONF_PM_1_0])
         cg.add(var.set_pm_1_0_sensor(sens))
@@ -116,6 +192,30 @@ def to_code(config):
     if CONF_PM_10_0 in config:
         sens = yield sensor.new_sensor(config[CONF_PM_10_0])
         cg.add(var.set_pm_10_0_sensor(sens))
+
+    if CONF_PM_0_3um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_0_3um])
+        cg.add(var.set_pm_particles_03um_sensor(sens))
+
+    if CONF_PM_0_5um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_0_5um])
+        cg.add(var.set_pm_particles_05um_sensor(sens))
+
+    if CONF_PM_1_0um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_1_0um])
+        cg.add(var.set_pm_particles_10um_sensor(sens))
+
+    if CONF_PM_2_5um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_2_5um])
+        cg.add(var.set_pm_particles_25um_sensor(sens))
+
+    if CONF_PM_5_0um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_5_0um])
+        cg.add(var.set_pm_particles_50um_sensor(sens))
+
+    if CONF_PM_10_0um in config:
+        sens = yield sensor.new_sensor(config[CONF_PM_10_0um])
+        cg.add(var.set_pm_particles_100um_sensor(sens))
 
     if CONF_TEMPERATURE in config:
         sens = yield sensor.new_sensor(config[CONF_TEMPERATURE])
