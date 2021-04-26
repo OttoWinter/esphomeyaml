@@ -51,18 +51,19 @@ void UARTComponent::setup() {
 
   if (this->tx_pin_.value_or(1) == 1 && this->rx_pin_.value_or(3) == 3) {
     this->hw_serial_ = &Serial;
-    this->hw_serial_->begin(this->baud_rate_, config);
+    this->hw_serial_->begin(this->baud_rate_, config, SERIAL_FULL, 1, this->invert_);
     this->hw_serial_->setRxBufferSize(this->rx_buffer_size_);
   } else if (this->tx_pin_.value_or(15) == 15 && this->rx_pin_.value_or(13) == 13) {
     this->hw_serial_ = &Serial;
-    this->hw_serial_->begin(this->baud_rate_, config);
+    this->hw_serial_->begin(this->baud_rate_, config, SERIAL_FULL, 1, this->invert_);
     this->hw_serial_->setRxBufferSize(this->rx_buffer_size_);
     this->hw_serial_->swap();
-  } else if (this->tx_pin_.value_or(2) == 2 && this->rx_pin_.value_or(8) == 8) {
+  } else if (this->tx_pin_.value_or(2) == 2 && this->rx_pin_.value_or(8) == 8 && !this->invert_) {
     this->hw_serial_ = &Serial1;
     this->hw_serial_->begin(this->baud_rate_, config);
     this->hw_serial_->setRxBufferSize(this->rx_buffer_size_);
   } else {
+    // TODO: Add inversion to SoftwareSerial
     this->sw_serial_ = new ESP8266SoftwareSerial();
     int8_t tx = this->tx_pin_.has_value() ? *this->tx_pin_ : -1;
     int8_t rx = this->rx_pin_.has_value() ? *this->rx_pin_ : -1;
