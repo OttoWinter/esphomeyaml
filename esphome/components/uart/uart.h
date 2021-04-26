@@ -19,7 +19,7 @@ const char *parity_to_str(UARTParityOptions parity);
 class ESP8266SoftwareSerial {
  public:
   void setup(int8_t tx_pin, int8_t rx_pin, uint32_t baud_rate, uint8_t stop_bits, uint32_t data_bits,
-             UARTParityOptions parity, size_t rx_buffer_size);
+             UARTParityOptions parity, size_t rx_buffer_size, bool invert);
 
   uint8_t read_byte();
   uint8_t peek_byte();
@@ -50,6 +50,7 @@ class ESP8266SoftwareSerial {
   UARTParityOptions parity_;
   ISRInternalGPIOPin *tx_pin_{nullptr};
   ISRInternalGPIOPin *rx_pin_{nullptr};
+  bool invert_;
 };
 #endif
 

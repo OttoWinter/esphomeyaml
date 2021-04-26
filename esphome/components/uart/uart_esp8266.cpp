@@ -63,12 +63,11 @@ void UARTComponent::setup() {
     this->hw_serial_->begin(this->baud_rate_, config);
     this->hw_serial_->setRxBufferSize(this->rx_buffer_size_);
   } else {
-    // TODO: Add inversion to SoftwareSerial
     this->sw_serial_ = new ESP8266SoftwareSerial();
     int8_t tx = this->tx_pin_.has_value() ? *this->tx_pin_ : -1;
     int8_t rx = this->rx_pin_.has_value() ? *this->rx_pin_ : -1;
     this->sw_serial_->setup(tx, rx, this->baud_rate_, this->stop_bits_, this->data_bits_, this->parity_,
-                            this->rx_buffer_size_);
+                            this->rx_buffer_size_, this->invert_);
   }
 }
 
@@ -191,18 +190,20 @@ void UARTComponent::flush() {
   }
 }
 void ESP8266SoftwareSerial::setup(int8_t tx_pin, int8_t rx_pin, uint32_t baud_rate, uint8_t stop_bits,
-                                  uint32_t data_bits, UARTParityOptions parity, size_t rx_buffer_size) {
+                                  uint32_t data_bits, UARTParityOptions parity, size_t rx_buffer_size,
+                                  bool invert) {
   this->bit_time_ = F_CPU / baud_rate;
   this->rx_buffer_size_ = rx_buffer_size;
   this->stop_bits_ = stop_bits;
   this->data_bits_ = data_bits;
   this->parity_ = parity;
+  this->invert_ = invert;
   if (tx_pin != -1) {
     auto pin = GPIOPin(tx_pin, OUTPUT);
     this->gpio_tx_pin_ = &pin;
     pin.setup();
     this->tx_pin_ = pin.to_isr();
-    this->tx_pin_->digital_write(true);
+    this->tx_pin_->digital_write(!this->invert_);
   }
   if (rx_pin != -1) {
     auto pin = GPIOPin(rx_pin, INPUT);
@@ -210,7 +211,11 @@ void ESP8266SoftwareSerial::setup(int8_t tx_pin, int8_t rx_pin, uint32_t baud_ra
     this->gpio_rx_pin_ = &pin;
     this->rx_pin_ = pin.to_isr();
     this->rx_buffer_ = new uint8_t[this->rx_buffer_size_];
-    pin.attach_interrupt(ESP8266SoftwareSerial::gpio_intr, this, FALLING);
+    if (this->invert_) {
+      pin.attach_interrupt(ESP8266SoftwareSerial::gpio_intr, this, RISING);
+    } else {
+      pin.attach_interrupt(ESP8266SoftwareSerial::gpio_intr, this, FALLING);
+    }
   }
 }
 void ICACHE_RAM_ATTR ESP8266SoftwareSerial::gpio_intr(ESP8266SoftwareSerial *arg) {
@@ -279,10 +284,10 @@ void ICACHE_RAM_ATTR ESP8266SoftwareSerial::wait_(uint32_t *wait, const uint32_t
 }
 bool ICACHE_RAM_ATTR ESP8266SoftwareSerial::read_bit_(uint32_t *wait, const uint32_t &start) {
   this->wait_(wait, start);
-  return this->rx_pin_->digital_read();
+  return this->rx_pin_->digital_read() ^ this->invert_;
 }
 void ICACHE_RAM_ATTR ESP8266SoftwareSerial::write_bit_(bool bit, uint32_t *wait, const uint32_t &start) {
-  this->tx_pin_->digital_write(bit);
+  this->tx_pin_->digital_write(bit ^ this->invert_);
   this->wait_(wait, start);
 }
 uint8_t ESP8266SoftwareSerial::read_byte() {
