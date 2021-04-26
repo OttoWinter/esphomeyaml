@@ -90,6 +90,9 @@ void UARTComponent::dump_config() {
   } else {
     ESP_LOGCONFIG(TAG, "  Using software serial");
   }
+  if (this->invert_) {
+    ESP_LOGCONFIG(TAG, "  Signal levels inverted");
+  }
   this->check_logger_conflict_();
 }
 
