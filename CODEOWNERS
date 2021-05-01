@@ -36,8 +36,10 @@ esphome/components/ds1307/* @badbadc0ffee
 esphome/components/exposure_notifications/* @OttoWinter
 esphome/components/ezo/* @ssieb
 esphome/components/fastled_base/* @OttoWinter
+esphome/components/fingerprint_grow/* @OnFreund @loongyh
 esphome/components/globals/* @esphome/core
 esphome/components/gpio/* @esphome/core
+esphome/components/gps/* @coogle
 esphome/components/homeassistant/* @OttoWinter
 esphome/components/i2c/* @esphome/core
 esphome/components/inkbird_ibsth1_mini/* @fkirill
@@ -79,6 +81,7 @@ esphome/components/rtttl/* @glmnet
 esphome/components/script/* @esphome/core
 esphome/components/sensor/* @esphome/core
 esphome/components/sgp40/* @SenexCrenshaw
+esphome/components/sht4x/* @sjtrny
 esphome/components/shutdown/* @esphome/core
 esphome/components/sim800l/* @glmnet
 esphome/components/spi/* @esphome/core
@@ -105,6 +108,7 @@ esphome/components/thermostat/* @kbx81
 esphome/components/time/* @OttoWinter
 esphome/components/tm1637/* @glmnet
 esphome/components/tmp102/* @timsavage
+esphome/components/tof10120/* @wstrzalka
 esphome/components/touch_gui/* @numo68
 esphome/components/tuya/binary_sensor/* @jesserockz
 esphome/components/tuya/climate/* @jesserockz
