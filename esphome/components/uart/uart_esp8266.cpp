@@ -190,8 +190,7 @@ void UARTComponent::flush() {
   }
 }
 void ESP8266SoftwareSerial::setup(int8_t tx_pin, int8_t rx_pin, uint32_t baud_rate, uint8_t stop_bits,
-                                  uint32_t data_bits, UARTParityOptions parity, size_t rx_buffer_size,
-                                  bool invert) {
+                                  uint32_t data_bits, UARTParityOptions parity, size_t rx_buffer_size, bool invert) {
   this->bit_time_ = F_CPU / baud_rate;
   this->rx_buffer_size_ = rx_buffer_size;
   this->stop_bits_ = stop_bits;
