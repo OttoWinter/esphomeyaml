@@ -53,11 +53,12 @@ enum ServiceArgType : uint32_t {
 };
 enum ClimateMode : uint32_t {
   CLIMATE_MODE_OFF = 0,
-  CLIMATE_MODE_AUTO = 1,
+  CLIMATE_MODE_HEAT_COOL = 1,
   CLIMATE_MODE_COOL = 2,
   CLIMATE_MODE_HEAT = 3,
   CLIMATE_MODE_FAN_ONLY = 4,
   CLIMATE_MODE_DRY = 5,
+  CLIMATE_MODE_AUTO = 6,
 };
 enum ClimateFanMode : uint32_t {
   CLIMATE_FAN_ON = 0,
@@ -83,6 +84,15 @@ enum ClimateAction : uint32_t {
   CLIMATE_ACTION_IDLE = 4,
   CLIMATE_ACTION_DRYING = 5,
   CLIMATE_ACTION_FAN = 6,
+};
+enum ClimatePreset : uint32_t {
+  CLIMATE_PRESET_ECO = 0,
+  CLIMATE_PRESET_AWAY = 1,
+  CLIMATE_PRESET_BOOST = 2,
+  CLIMATE_PRESET_COMFORT = 3,
+  CLIMATE_PRESET_HOME = 4,
+  CLIMATE_PRESET_SLEEP = 5,
+  CLIMATE_PRESET_ACTIVITY = 6,
 };
 
 }  // namespace enums
@@ -694,6 +704,9 @@ class ListEntitiesClimateResponse : public ProtoMessage {
   bool supports_action{false};                                   // NOLINT
   std::vector<enums::ClimateFanMode> supported_fan_modes{};      // NOLINT
   std::vector<enums::ClimateSwingMode> supported_swing_modes{};  // NOLINT
+  std::vector<std::string> supported_custom_fan_modes{};         // NOLINT
+  std::vector<enums::ClimatePreset> supported_presets{};         // NOLINT
+  std::vector<std::string> supported_custom_presets{};           // NOLINT
   void encode(ProtoWriteBuffer buffer) const override;
   void dump_to(std::string &out) const override;
 
@@ -714,11 +727,15 @@ class ClimateStateResponse : public ProtoMessage {
   enums::ClimateAction action{};         // NOLINT
   enums::ClimateFanMode fan_mode{};      // NOLINT
   enums::ClimateSwingMode swing_mode{};  // NOLINT
+  std::string custom_fan_mode{};         // NOLINT
+  enums::ClimatePreset preset{};         // NOLINT
+  std::string custom_preset{};           // NOLINT
   void encode(ProtoWriteBuffer buffer) const override;
   void dump_to(std::string &out) const override;
 
  protected:
   bool decode_32bit(uint32_t field_id, Proto32Bit value) override;
+  bool decode_length(uint32_t field_id, ProtoLengthDelimited value) override;
   bool decode_varint(uint32_t field_id, ProtoVarInt value) override;
 };
 class ClimateCommandRequest : public ProtoMessage {
@@ -738,11 +755,18 @@ class ClimateCommandRequest : public ProtoMessage {
   enums::ClimateFanMode fan_mode{};         // NOLINT
   bool has_swing_mode{false};               // NOLINT
   enums::ClimateSwingMode swing_mode{};     // NOLINT
+  bool has_custom_fan_mode{false};          // NOLINT
+  std::string custom_fan_mode{};            // NOLINT
+  bool has_preset{false};                   // NOLINT
+  enums::ClimatePreset preset{};            // NOLINT
+  bool has_custom_preset{false};            // NOLINT
+  std::string custom_preset{};              // NOLINT
   void encode(ProtoWriteBuffer buffer) const override;
   void dump_to(std::string &out) const override;
 
  protected:
   bool decode_32bit(uint32_t field_id, Proto32Bit value) override;
+  bool decode_length(uint32_t field_id, ProtoLengthDelimited value) override;
   bool decode_varint(uint32_t field_id, ProtoVarInt value) override;
 };
 
