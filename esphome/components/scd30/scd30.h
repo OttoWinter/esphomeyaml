@@ -18,6 +18,7 @@ class SCD30Component : public PollingComponent, public i2c::I2CDevice {
   void set_ambient_pressure_compensation(float pressure) {
     ambient_pressure_compensation_ = (uint16_t)(pressure * 1000);
   }
+  void set_forced_recalibration_value(uint16_t value);
   void set_temperature_offset(float offset) { temperature_offset_ = offset; }
 
   void setup() override;
@@ -42,6 +43,7 @@ class SCD30Component : public PollingComponent, public i2c::I2CDevice {
   uint16_t ambient_pressure_compensation_{0x0000};
   float temperature_offset_{0.0};
 
+  bool initialized_{false};
   sensor::Sensor *co2_sensor_{nullptr};
   sensor::Sensor *humidity_sensor_{nullptr};
   sensor::Sensor *temperature_sensor_{nullptr};
