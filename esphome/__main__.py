@@ -235,6 +235,14 @@ def upload_program(config, args, host):
     password = ota_conf[CONF_PASSWORD]
     return espota2.run_ota(host, remote_port, password, CORE.firmware_bin)
 
+def mqtt_ca_cert(ca_cert_path):
+    import os
+
+    ca_cert= ca_cert_path
+    if ca_cert is not None: 
+        if not os.path.isabs(ca_cert) : 
+            ca_cert = os.path.join(os.getcwd(), ca_cert)
+    return ca_cert
 
 def show_logs(config, args, port):
     if "logger" not in config:
@@ -250,7 +258,8 @@ def show_logs(config, args, port):
         from esphome import mqtt
 
         return mqtt.show_logs(
-            config, args.topic, args.username, args.password, args.client_id
+            config, args.topic, args.username, args.password, args.client_id,
+            mqtt_ca_cert(args.ca_cert)
         )
 
     raise EsphomeError("No remote or local logging method configured (api/mqtt/logger)")
@@ -260,7 +269,8 @@ def clean_mqtt(config, args):
     from esphome import mqtt
 
     return mqtt.clear_topic(
-        config, args.topic, args.username, args.password, args.client_id
+        config, args.topic, args.username, args.password, args.client_id,
+        mqtt_ca_cert(args.ca_cert)
     )
 
 
@@ -506,6 +516,10 @@ def parse_args(argv):
         help="Manually specify a serial port to use"
         "For example /dev/cu.SLAB_USBtoUART.",
     )
+    parser_logs.add_argument(
+        "--ca-cert",
+        help="If using self signed certificate for MQTT"
+        "Pass, ca cert file path, like ../mqtt/certs/ca.crt")
 
     parser_run = subparsers.add_parser(
         "run",
@@ -538,6 +552,10 @@ def parse_args(argv):
     parser_clean.add_argument("--username", help="Manually set the username.")
     parser_clean.add_argument("--password", help="Manually set the password.")
     parser_clean.add_argument("--client-id", help="Manually set the client id.")
+    parser_clean.add_argument(
+        "--ca-cert",
+        help="If using self signed certificate for MQTT"
+        "Pass, ca cert file path, like ../mqtt/certs/ca.crt")
 
     subparsers.add_parser(
         "wizard",
