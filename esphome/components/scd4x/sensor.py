@@ -21,8 +21,8 @@ from esphome.const import (
 
 DEPENDENCIES = ["i2c"]
 
-scd30_ns = cg.esphome_ns.namespace("scd30")
-SCD30Component = scd30_ns.class_("SCD30Component", cg.PollingComponent, i2c.I2CDevice)
+scd4x_ns = cg.esphome_ns.namespace("scd4x")
+SCD4XComponent = scd4x_ns.class_("SCD4XComponent", cg.PollingComponent, i2c.I2CDevice)
 
 CONF_AUTOMATIC_SELF_CALIBRATION = "automatic_self_calibration"
 CONF_ALTITUDE_COMPENSATION = "altitude_compensation"
@@ -35,14 +35,14 @@ def remove_altitude_suffix(value):
     return re.sub(r"\s*(?:m(?:\s+a\.s\.l)?)|(?:MAM?SL)$", "", value)
 
 
-SetForcedRecalibrationValueAction = scd30_ns.class_(
+SetForcedRecalibrationValueAction = scd4x_ns.class_(
     "SetForcedRecalibrationValueAction", automation.Action
 )
 
 CONFIG_SCHEMA = (
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(SCD30Component),
+            cv.GenerateID(): cv.declare_id(SCD4XComponent),
             cv.Optional(CONF_CO2): sensor.sensor_schema(
                 UNIT_PARTS_PER_MILLION, ICON_MOLECULE_CO2, 0, DEVICE_CLASS_EMPTY
             ),
@@ -62,7 +62,7 @@ CONFIG_SCHEMA = (
         }
     )
     .extend(cv.polling_component_schema("60s"))
-    .extend(i2c.i2c_device_schema(0x61))
+    .extend(i2c.i2c_device_schema(0x62))
 )
 
 
@@ -99,11 +99,11 @@ def to_code(config):
 
 
 @automation.register_action(
-    "scd30.set_forced_recalibration_value",
+    "scd4x.set_forced_recalibration_value",
     SetForcedRecalibrationValueAction,
     maybe_simple_id(
         {
-            cv.Required(CONF_ID): cv.use_id(SCD30Component),
+            cv.Required(CONF_ID): cv.use_id(SCD4XComponent),
             cv.Required(CONF_FORCED_RECALIBRATION_VALUE): cv.templatable(
                 cv.int_range(min=0, max=0xFFFF, max_included=False)
             ),

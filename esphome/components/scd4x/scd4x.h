@@ -5,10 +5,10 @@
 #include "esphome/components/i2c/i2c.h"
 
 namespace esphome {
-namespace scd30 {
+namespace scd4x {
 
-/// This class implements support for the Sensirion scd30 i2c GAS (VOC and CO2eq) sensors.
-class SCD30Component : public PollingComponent, public i2c::I2CDevice {
+/// This class implements support for the Sensirion scd4x i2c GAS (VOC and CO2eq) sensors.
+class SCD4XComponent : public PollingComponent, public i2c::I2CDevice {
  public:
   void set_co2_sensor(sensor::Sensor *co2) { co2_sensor_ = co2; }
   void set_humidity_sensor(sensor::Sensor *humidity) { humidity_sensor_ = humidity; }
@@ -27,6 +27,7 @@ class SCD30Component : public PollingComponent, public i2c::I2CDevice {
   float get_setup_priority() const override { return setup_priority::DATA; }
 
  protected:
+  bool initialized_{false};
   bool write_command_(uint16_t command);
   bool write_command_(uint16_t command, uint16_t data);
   bool read_data_(uint16_t *data, uint8_t len);
@@ -34,20 +35,19 @@ class SCD30Component : public PollingComponent, public i2c::I2CDevice {
 
   enum ErrorCode {
     COMMUNICATION_FAILED,
-    FIRMWARE_IDENTIFICATION_FAILED,
+    SERIAL_NUMBER_IDENTIFICATION_FAILED,
     MEASUREMENT_INIT_FAILED,
     UNKNOWN
   } error_code_{UNKNOWN};
   bool enable_asc_{true};
   uint16_t altitude_compensation_{0xFFFF};
-  uint16_t ambient_pressure_compensation_{0x0000};
+  uint16_t ambient_pressure_compensation_{0xFFFF};
   float temperature_offset_{0.0};
 
-  bool initialized_{false};
   sensor::Sensor *co2_sensor_{nullptr};
   sensor::Sensor *humidity_sensor_{nullptr};
   sensor::Sensor *temperature_sensor_{nullptr};
 };
 
-}  // namespace scd30
+}  // namespace scd4x
 }  // namespace esphome
