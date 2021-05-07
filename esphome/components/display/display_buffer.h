@@ -311,8 +311,16 @@ class DisplayBuffer {
   virtual int get_width_internal() = 0;
 
   void init_internal_(uint32_t buffer_length);
+  void init_internal_multiple_(uint32_t buffer_length);
 
   void do_update_();
+
+  // utility for buffer splitting
+  const static uint8_t display_buffer_parts = 4;
+  uint32_t buffer_size = 0;
+  uint32_t display_buffer_part(uint32_t x);
+  uint32_t display_buffer_pos(uint32_t x);
+  uint8_t *buffer_multiple_[display_buffer_parts]{nullptr};
 
   uint8_t *buffer_{nullptr};
   DisplayRotation rotation_{DISPLAY_ROTATION_0_DEGREES};
