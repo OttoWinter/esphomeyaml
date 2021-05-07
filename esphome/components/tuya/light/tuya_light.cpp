@@ -6,16 +6,36 @@ namespace tuya {
 
 static const char *TAG = "tuya.light";
 
+bool TuyaLight::should_ignore_dimmer_command_() {
+  if (this->ignore_dimmer_cmd_timeout_ > millis()) {
+    ESP_LOGV(TAG, "dimmer_cmd: ignored");
+    return true;
+  }
+
+  this->ignore_write_state_ = true;  // Ignore next write_state call
+  return false;
+}
+
 void TuyaLight::setup() {
   if (this->dimmer_id_.has_value()) {
     this->parent_->register_listener(*this->dimmer_id_, [this](TuyaDatapoint datapoint) {
+      if (this->should_ignore_dimmer_command_())
+        return;
+
+      int brightness_int = map(datapoint.value_uint, this->min_value_, this->max_value_, 0, 255);
+      brightness_int = max(brightness_int, 0);
+      auto brightness = float(brightness_int) / 255.0f;
+
       auto call = this->state_->make_call();
-      call.set_brightness(float(datapoint.value_uint) / this->max_value_);
+      call.set_brightness(brightness);
       call.perform();
     });
   }
   if (switch_id_.has_value()) {
     this->parent_->register_listener(*this->switch_id_, [this](TuyaDatapoint datapoint) {
+      if (this->should_ignore_dimmer_command_())
+        return;
+
       auto call = this->state_->make_call();
       call.set_state(datapoint.value_bool);
       call.perform();
@@ -47,8 +67,16 @@ light::LightTraits TuyaLight::get_traits() {
 void TuyaLight::setup_state(light::LightState *state) { state_ = state; }
 
 void TuyaLight::write_state(light::LightState *state) {
+  if (this->ignore_write_state_) {
+    this->ignore_write_state_ = false;
+    ESP_LOGV(TAG, "write_state: ignored");
+    return;
+  }
+
   float brightness;
   state->current_values_as_brightness(&brightness);
+
+  this->ignore_dimmer_cmd_timeout_ = millis() + 250;  // Ignore serial received dim commands for the next 250ms
 
   if (brightness == 0.0f) {
     // turning off, first try via switch (if exists), then dimmer
@@ -69,8 +97,8 @@ void TuyaLight::write_state(light::LightState *state) {
     return;
   }
 
-  auto brightness_int = static_cast<uint32_t>(brightness * this->max_value_);
-  brightness_int = std::max(brightness_int, this->min_value_);
+  auto brightness_int = static_cast<uint32_t>(brightness * 255);
+  brightness_int = map(brightness_int, 0, 255, this->min_value_, this->max_value_);
 
   if (this->dimmer_id_.has_value()) {
     TuyaDatapoint datapoint{};
