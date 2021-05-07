@@ -551,6 +551,11 @@ class EsphomeCore:
         self.component_ids = set()
         # Whether ESPHome was started in verbose mode
         self.verbose = False
+        # Regexps to search for stack usage reduction workaround
+        self.stack_reduction_re = re.compile(
+            r"(\([a-zA-Z_\d ]*\{[a-zA-Z_\d, {}]*\)\;)|(\[\=\]\()"
+        )
+        self.stack_reduction_not_re = re.compile(r"^\s*[a-zA-Z_:\d]+ [a-zA-Z_:\d]+ =")
 
     def reset(self):
         self.dashboard = False
@@ -808,6 +813,13 @@ class EsphomeCore:
     def has_id(self, id):
         return id in self.variables
 
+    def reduce_stack_usage(self, stmt):
+        if self.stack_reduction_not_re.search(stmt) is not None:
+            return stmt
+        if self.stack_reduction_re.search(stmt) is not None:
+            return "[&]() __attribute__((noinline)) {" + stmt + "}();"
+        return stmt
+
     @property
     def cpp_main_section(self):
         from esphome.cpp_generator import statement
@@ -815,6 +827,7 @@ class EsphomeCore:
         main_code = []
         for exp in self.main_statements:
             text = str(statement(exp))
+            text = self.reduce_stack_usage(text)
             text = text.rstrip()
             main_code.append(text)
         return "\n".join(main_code) + "\n\n"
