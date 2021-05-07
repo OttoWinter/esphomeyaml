@@ -26,7 +26,7 @@ class WaveshareEPaper : public PollingComponent,
 
   void update() override;
 
-  void fill(Color color) override;
+  virtual void fill(Color color) override;
 
   void setup() override {
     this->setup_pins_();
@@ -38,7 +38,7 @@ class WaveshareEPaper : public PollingComponent,
  protected:
   void draw_absolute_pixel_internal(int x, int y, Color color) override;
 
-  bool wait_until_idle_();
+  virtual bool wait_until_idle_();
 
   void setup_pins_();
 
@@ -51,7 +51,7 @@ class WaveshareEPaper : public PollingComponent,
     }
   }
 
-  uint32_t get_buffer_length_();
+  virtual uint32_t get_buffer_length_();
 
   void start_command_();
   void end_command_();
@@ -268,6 +268,61 @@ class WaveshareEPaper7P5InV2 : public WaveshareEPaper {
   int get_width_internal() override;
 
   int get_height_internal() override;
+};
+
+enum WaveshareEPaperTypeFModel {
+  WAVESHARE_ACEP_5_65_IN = 0,
+};
+
+static const Color COLOR_F_BLACK(0, 0, 0);
+static const Color COLOR_F_WHITE(255, 255, 255);
+static const Color COLOR_F_GREEN(0, 255, 0);
+static const Color COLOR_F_BLUE(0, 0, 255);
+static const Color COLOR_F_RED(255, 0, 0);
+static const Color COLOR_F_YELLOW(255, 255, 0);
+static const Color COLOR_F_ORANGE(255, 127, 0);
+static const Color COLOR_F_CLEAN(0x123456);  // Anything that isn't one of the above will do.
+
+class WaveshareEPaperTypeF : public WaveshareEPaper {
+ public:
+  WaveshareEPaperTypeF(WaveshareEPaperTypeFModel model);
+
+  void initialize() override;
+
+  void dump_config() override;
+
+  void display() override;
+
+  void fill(Color color) override;
+
+  void deep_sleep() override {
+    if (this->reset_pin_ != nullptr) {
+      delay(100);  // NOLINT
+      this->command(0x07);
+      this->data(0xA5);
+      delay(100);  // NOLINT
+      this->reset_pin_->digital_write(false);
+    }
+  }
+
+ protected:
+  virtual uint8_t color_(Color color);  // NOLINT(readability-identifier-naming)
+
+  uint8_t pixel_storage_size_ = 3;
+
+  void draw_absolute_pixel_internal(int x, int y, Color color) override;  // NOLINT(readability-identifier-naming)
+  void draw_absolute_pixel_internal(int x, int y, uint8_t index);         // NOLINT(readability-identifier-naming)
+  uint8_t get_index_value_(uint32_t pos);
+  void send_display_size_(uint16_t width, uint16_t height);  // NOLINT(readability-identifier-naming)
+
+  int get_width_internal() override;
+  int get_height_internal() override;
+  uint32_t get_buffer_length_() override;  // NOLINT(readability-identifier-naming)
+
+  bool wait_until_idle_() override;  // NOLINT(readability-identifier-naming)
+  bool wait_until_busy_();           // NOLINT(readability-identifier-naming)
+
+  WaveshareEPaperTypeFModel model_;
 };
 
 }  // namespace waveshare_epaper

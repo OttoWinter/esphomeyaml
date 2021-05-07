@@ -989,5 +989,264 @@ void WaveshareEPaper7P5InV2::dump_config() {
   LOG_PIN("  Busy Pin: ", this->busy_pin_);
   LOG_UPDATE_INTERVAL(this);
 }
+
+void WaveshareEPaperTypeF::initialize() {
+  this->reset_();
+  this->wait_until_busy_();
+  this->command(0x00);  // 0x00: Panel Settings
+  this->data(0xEF);     // Scan up, shift right, DC/DC enabled
+  this->data(0x08);
+  this->command(0x01);  // 0x01: Power settings
+  this->data(0x37);     // Use internal DC/DC for everything
+  this->data(0x00);
+  this->data(0x23);
+  this->data(0x23);
+  this->command(0x03);  // 0x03: Power off sequence
+  this->data(0x00);     // 0x00: 1 frame (default)
+  this->command(0x06);  // 0x06: Booster soft start
+  this->data(0xC7);
+  this->data(0xC7);
+  this->data(0x1D);
+  this->command(0x30);  // 0x30: PLL control
+  this->data(0x3C);     // 0x3C: 50Hz
+  this->command(0x41);  // 0x41: Temperature sensor
+  this->data(0x00);     // 0x00: Use internal temperature sensor
+  this->command(0x50);  // 0x50: Border color, color LUT, VCOM + data interval
+  this->data(0x37);     // White border, default LUT, default VCOM + data interval
+  this->command(0x60);  // 0x60: Undocumented
+  this->data(0x22);
+  this->send_display_size_(this->get_width_internal(), this->get_height_internal());
+  this->command(0xE3);  // 0xE3: Undocumented
+  this->data(0xAA);
+
+  delay(100);  // NOLINT
+  App.feed_wdt();
+}
+void WaveshareEPaperTypeF::dump_config() {
+  LOG_DISPLAY("", "Waveshare Advanced Color E-Paper", this);
+  switch (this->model_) {
+    case WAVESHARE_ACEP_5_65_IN:
+      ESP_LOGCONFIG(TAG, "  Model: 5.65in");
+      break;
+  }
+  LOG_PIN("  Reset Pin: ", this->reset_pin_);
+  LOG_PIN("  DC Pin: ", this->dc_pin_);
+  LOG_PIN("  Busy Pin: ", this->busy_pin_);
+  LOG_UPDATE_INTERVAL(this);
+}
+void HOT WaveshareEPaperTypeF::send_display_size_(uint16_t width, uint16_t height) {
+  this->command(0x61);  // 0x61: Set Display Resolution
+  this->start_data_();
+  this->write_byte(width >> 8);
+  this->write_byte(width & 0xFF);
+  this->write_byte(height >> 8);
+  this->write_byte(height & 0xFF);
+  this->end_data_();
+}
+void HOT WaveshareEPaperTypeF::display() {
+  uint32_t total_pixels = this->get_width_internal() * this->get_height_internal();
+  this->send_display_size_(this->get_width_internal(), this->get_height_internal());
+
+  // "Clean" display (fill with 0x7) to avoid/prevent ghosting
+  this->command(0x10);  // 0x10: Start data transmission (for display)
+  this->start_data_();
+  uint32_t num_bytes = total_pixels / 2;
+  for (size_t i = 0; i < num_bytes; i++) {
+    this->write_byte(0x77);
+    App.feed_wdt();
+  }
+  this->end_data_();
+
+  this->command(0x04);  // 0x04: Turn power ON
+  this->wait_until_busy_();
+  this->command(0x12);  // 0x12: Refresh Display
+  this->wait_until_busy_();
+  this->command(0x02);  // 0x02: Turn power OFF
+  this->wait_until_idle_();
+  App.feed_wdt();
+
+  delay(200);  // NOLINT
+
+  this->send_display_size_(this->get_width_internal(), this->get_height_internal());
+
+  // Send actual pixel buffer
+  this->command(0x10);  // 0x10: Start data transmission (for display)
+  this->start_data_();
+
+  for (uint32_t pos = 0; pos < total_pixels; pos += 2) {
+    uint8_t out = this->get_index_value_(pos) << 4;
+    if (pos < total_pixels - 1) {
+      out |= this->get_index_value_(pos + 1);
+    }
+    this->write_byte(out);
+    App.feed_wdt();
+  }
+
+  this->end_data_();
+
+  this->command(0x04);  // 0x04: Turn power ON
+  this->wait_until_busy_();
+  this->command(0x12);  // 0x12: Refresh Display
+  this->wait_until_busy_();
+  this->command(0x02);  // 0x02: Turn power OFF
+  this->wait_until_idle_();
+  App.feed_wdt();
+
+  delay(200);  // NOLINT
+  App.feed_wdt();
+}
+void WaveshareEPaperTypeF::fill(Color color) {
+  const uint8_t fill = this->color_(color);
+  for (uint16_t x = 0; x < this->get_width_internal(); x++) {
+    for (uint16_t y = 0; y < this->get_height_internal(); y++) {
+      this->draw_absolute_pixel_internal(x, y, fill);
+    }
+  }
+}
+uint8_t HOT WaveshareEPaperTypeF::color_(Color color) {
+  if (color.raw_32 == COLOR_F_BLACK.raw_32) {
+    return 0x00;
+  } else if (color.raw_32 == COLOR_F_WHITE.raw_32) {
+    return 0x01;
+  } else if (color.raw_32 == COLOR_F_GREEN.raw_32) {
+    return 0x02;
+  } else if (color.raw_32 == COLOR_F_BLUE.raw_32) {
+    return 0x03;
+  } else if (color.raw_32 == COLOR_F_RED.raw_32) {
+    return 0x04;
+  } else if (color.raw_32 == COLOR_F_YELLOW.raw_32) {
+    return 0x05;
+  } else if (color.raw_32 == COLOR_F_ORANGE.raw_32) {
+    return 0x06;
+  }
+  return 0x07;  // "clean"
+}
+void HOT WaveshareEPaperTypeF::draw_absolute_pixel_internal(int x, int y, Color color) {
+  const uint8_t index = this->color_(color);
+
+  this->draw_absolute_pixel_internal(x, y, index);
+}
+void HOT WaveshareEPaperTypeF::draw_absolute_pixel_internal(int x, int y, uint8_t index) {
+  if (x >= this->get_width_internal() || y >= this->get_height_internal() || x < 0 || y < 0)
+    return;
+
+  uint32_t pos = (x + y * this->get_width_internal());
+
+  const uint32_t pixel_bit_start = pos * pixel_storage_size_;
+  const uint32_t pixel_bit_end = pixel_bit_start + pixel_storage_size_;
+
+  const uint32_t byte_location_start = pixel_bit_start / 8;
+  const uint32_t byte_location_end = pixel_bit_end / 8;
+
+  const uint8_t byte_offset_start = pixel_bit_start % 8;
+  uint8_t index_byte_start = this->buffer_[byte_location_start];
+
+  uint8_t mask = ((1 << pixel_storage_size_) - 1) << byte_offset_start;
+
+  index_byte_start = (index_byte_start & ~mask) | ((index << byte_offset_start) & mask);
+  this->buffer_[byte_location_start] = index_byte_start;
+
+  if (byte_location_start == byte_location_end) {  // Index is in the same byte
+    return;
+  }
+
+  const uint8_t byte_offset_end = pixel_bit_end % 8;
+
+  uint8_t index_byte_end = this->buffer_[byte_location_end];
+  mask = (((uint8_t) 1 << pixel_storage_size_) - 1) >> (pixel_storage_size_ - byte_offset_end);
+
+  index_byte_end = (index_byte_end & ~mask) | ((index >> (pixel_storage_size_ - byte_offset_end)) & mask);
+
+  this->buffer_[byte_location_end] = index_byte_end;
+}
+uint8_t HOT WaveshareEPaperTypeF::get_index_value_(uint32_t pos) {
+  const uint32_t pixel_bit_start = pos * pixel_storage_size_;
+  const uint32_t pixel_bit_end = pixel_bit_start + pixel_storage_size_;
+
+  const uint32_t byte_location_start = pixel_bit_start / 8;
+  const uint32_t byte_location_end = pixel_bit_end / 8;
+
+  uint8_t index_byte_start = this->buffer_[byte_location_start];
+  const uint8_t byte_offset_start = pixel_bit_start % 8;
+
+  uint8_t mask = (1 << pixel_storage_size_) - 1;
+
+  index_byte_start = (index_byte_start >> byte_offset_start);
+
+  if (byte_location_start == byte_location_end) {  // Index is in the same byte
+    return index_byte_start & mask;
+  }
+
+  const uint8_t byte_offset_end = pixel_bit_end % 8;
+
+  uint8_t end_mask = mask >> (pixel_storage_size_ - byte_offset_end);
+
+  uint8_t index_byte_end = this->buffer_[byte_location_end];
+
+  index_byte_end = (index_byte_end & end_mask) << (pixel_storage_size_ - byte_offset_end);
+
+  index_byte_end = index_byte_end | index_byte_start;
+
+  return index_byte_end & mask;
+}
+int WaveshareEPaperTypeF::get_width_internal() {
+  switch (this->model_) {
+    case WAVESHARE_ACEP_5_65_IN:
+      return 600;
+  }
+  return 0;
+}
+int WaveshareEPaperTypeF::get_height_internal() {
+  switch (this->model_) {
+    case WAVESHARE_ACEP_5_65_IN:
+      return 448;
+  }
+  return 0;
+}
+uint32_t WaveshareEPaperTypeF::get_buffer_length_() {
+  uint32_t total_pixels = this->get_width_internal() * this->get_height_internal();
+  uint32_t screensize = total_pixels * this->pixel_storage_size_;
+
+  uint32_t bufflength = (screensize % 8) ? screensize / 8 + 1 : screensize / 8;
+
+  return bufflength;
+}
+bool WaveshareEPaperTypeF::wait_until_idle_() {
+  if (this->busy_pin_ == nullptr) {
+    return true;
+  }
+
+  const uint32_t start = millis();
+  while (this->busy_pin_->digital_read()) {
+    if (millis() - start > 15000) {
+      ESP_LOGE(TAG, "Timeout while displaying image!");
+      App.feed_wdt();
+      return false;
+    }
+    delay(10);
+  }
+
+  App.feed_wdt();
+  return true;
+}
+bool WaveshareEPaperTypeF::wait_until_busy_() {
+  if (this->busy_pin_ == nullptr) {
+    return true;
+  }
+
+  const uint32_t start = millis();
+  while (!this->busy_pin_->digital_read()) {
+    if (millis() - start > 15000) {
+      ESP_LOGE(TAG, "Timeout while displaying image!");
+      App.feed_wdt();
+      return false;
+    }
+    delay(10);
+  }
+
+  App.feed_wdt();
+  return true;
+}
+WaveshareEPaperTypeF::WaveshareEPaperTypeF(WaveshareEPaperTypeFModel model) : model_(model) {}
 }  // namespace waveshare_epaper
 }  // namespace esphome
