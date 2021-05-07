@@ -232,6 +232,7 @@ sensor:
     id: freezer_temp_source
     reference_voltage: 3.19
     number: 0
+
 time:
   - platform: homeassistant
     on_time:
