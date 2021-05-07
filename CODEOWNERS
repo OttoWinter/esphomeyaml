@@ -25,6 +25,7 @@ esphome/components/ble_client/* @buxtronix
 esphome/components/bme680_bsec/* @trvrnrth
 esphome/components/canbus/* @danielschramm @mvturnho
 esphome/components/captive_portal/* @OttoWinter
+esphome/components/chenyang/* @loongyh
 esphome/components/climate/* @esphome/core
 esphome/components/climate_ir/* @glmnet
 esphome/components/coolix/* @glmnet
@@ -33,6 +34,7 @@ esphome/components/ct_clamp/* @jesserockz
 esphome/components/debug/* @OttoWinter
 esphome/components/dfplayer/* @glmnet
 esphome/components/dht/* @OttoWinter
+esphome/components/dooya/* @loongyh
 esphome/components/ds1307/* @badbadc0ffee
 esphome/components/exposure_notifications/* @OttoWinter
 esphome/components/ezo/* @ssieb
@@ -115,6 +117,7 @@ esphome/components/tuya/climate/* @jesserockz
 esphome/components/tuya/sensor/* @jesserockz
 esphome/components/tuya/switch/* @jesserockz
 esphome/components/uart/* @esphome/core
+esphome/components/uart_multi/* @loongyh
 esphome/components/ultrasonic/* @OttoWinter
 esphome/components/version/* @esphome/core
 esphome/components/web_server_base/* @OttoWinter
