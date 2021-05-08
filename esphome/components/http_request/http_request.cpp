@@ -16,7 +16,7 @@ void HttpRequestComponent::set_url(std::string url) {
   this->url_ = url;
   this->secure_ = url.compare(0, 6, "https:") == 0;
 
-  if (!this->last_url_.empty() && this->url_ != this->last_url_) {
+  if (!this->force_reuse_ && !this->last_url_.empty() && this->url_ != this->last_url_) {
     // Close connection if url has been changed
     this->client_.setReuse(false);
     this->client_.end();
@@ -74,6 +74,11 @@ void HttpRequestComponent::send(const std::vector<HttpRequestResponseTrigger *> 
   ESP_LOGD(TAG, "HTTP Request completed; URL: %s; Code: %d", this->url_.c_str(), http_code);
 }
 
+void HttpRequestComponent::send() {
+  std::vector<HttpRequestResponseTrigger *> response_triggers;
+  this->send(response_triggers);
+}
+
 #ifdef ARDUINO_ARCH_ESP8266
 WiFiClient *HttpRequestComponent::get_wifi_client_() {
   if (this->secure_) {
@@ -97,10 +102,7 @@ void HttpRequestComponent::close() {
   this->client_.end();
 }
 
-const char *HttpRequestComponent::get_string() {
-  static const String STR = this->client_.getString();
-  return STR.c_str();
-}
+const String HttpRequestComponent::get_string() { return this->client_.getString(); }
 
 }  // namespace http_request
 }  // namespace esphome

@@ -30,19 +30,22 @@ class HttpRequestComponent : public Component {
   float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
   void set_url(std::string url);
+  void set_force_reuse(bool reuse) { this->force_reuse_ = reuse; }
   void set_method(const char *method) { this->method_ = method; }
   void set_useragent(const char *useragent) { this->useragent_ = useragent; }
   void set_timeout(uint16_t timeout) { this->timeout_ = timeout; }
   void set_body(std::string body) { this->body_ = body; }
   void set_headers(std::list<Header> headers) { this->headers_ = headers; }
   void send(const std::vector<HttpRequestResponseTrigger *> &response_triggers);
+  void send();
   void close();
-  const char *get_string();
+  const String get_string();
 
  protected:
   HTTPClient client_{};
   std::string url_;
   std::string last_url_;
+  bool force_reuse_{false};
   const char *method_;
   const char *useragent_{nullptr};
   bool secure_;
