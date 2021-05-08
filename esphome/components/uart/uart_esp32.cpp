@@ -97,6 +97,9 @@ void UARTComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "  Data Bits: %u", this->data_bits_);
   ESP_LOGCONFIG(TAG, "  Parity: %s", parity_to_str(this->parity_));
   ESP_LOGCONFIG(TAG, "  Stop bits: %u", this->stop_bits_);
+  if (this->invert_) {
+    ESP_LOGCONFIG(TAG, "  Signal levels inverted");
+  }
   this->check_logger_conflict_();
 }
 
