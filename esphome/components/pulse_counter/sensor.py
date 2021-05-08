@@ -63,6 +63,27 @@ def validate_count_mode(value):
     return value
 
 
+NUMBER_OF_HARDWARE_PULSECOUNTERS = 0
+
+
+def validate_hardware_pulsecounter(value):
+    # Check if value is boolean
+    global NUMBER_OF_HARDWARE_PULSECOUNTERS
+    if not isinstance(value, (bool)):
+        raise cv.Invalid("Use only True, or False as value for hardware_pulsecounter")
+    if CORE.is_esp8266 and value:
+        raise cv.Invalid("Only ESP32 supports hardware_pulsecounter")
+    if value:
+        if NUMBER_OF_HARDWARE_PULSECOUNTERS < 8:
+            NUMBER_OF_HARDWARE_PULSECOUNTERS += 1
+        else:
+            raise cv.Invalid("Only 8 hardware pulse-counters are supported")
+    return value
+
+
+CONF_HARDWARE_PULSECOUNTER = "hardware_pulsecounter"
+
+
 CONFIG_SCHEMA = (
     sensor.sensor_schema(UNIT_PULSES_PER_MINUTE, ICON_PULSE, 2, DEVICE_CLASS_EMPTY)
     .extend(
@@ -84,6 +105,9 @@ CONFIG_SCHEMA = (
                 ),
                 validate_count_mode,
             ),
+            cv.Optional(
+                CONF_HARDWARE_PULSECOUNTER, default=bool(CORE.is_esp32)
+            ): validate_hardware_pulsecounter,
             cv.Optional(CONF_INTERNAL_FILTER, default="13us"): validate_internal_filter,
             cv.Optional(CONF_TOTAL): sensor.sensor_schema(
                 UNIT_PULSES, ICON_PULSE, 0, DEVICE_CLASS_EMPTY
@@ -95,6 +119,10 @@ CONFIG_SCHEMA = (
 
 
 def to_code(config):
+    if config[CONF_HARDWARE_PULSECOUNTER]:
+        cg.add_define("USE_HARDWARE_PULSECOUNTER")
+    else:
+        cg.add_define("USE_SOFTWARE_PULSECOUNTER")
     var = cg.new_Pvariable(config[CONF_ID])
     yield cg.register_component(var, config)
     yield sensor.register_sensor(var, config)
@@ -105,6 +133,7 @@ def to_code(config):
     cg.add(var.set_rising_edge_mode(count[CONF_RISING_EDGE]))
     cg.add(var.set_falling_edge_mode(count[CONF_FALLING_EDGE]))
     cg.add(var.set_filter_us(config[CONF_INTERNAL_FILTER]))
+    cg.add(var.set_hardware_pulsecounter(config[CONF_HARDWARE_PULSECOUNTER]))
 
     if CONF_TOTAL in config:
         sens = yield sensor.new_sensor(config[CONF_TOTAL])
