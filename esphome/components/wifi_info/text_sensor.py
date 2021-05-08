@@ -7,6 +7,7 @@ from esphome.const import (
     CONF_IP_ADDRESS,
     CONF_SSID,
     CONF_MAC_ADDRESS,
+    CONF_NETWORKS,
 )
 from esphome.core import coroutine
 
@@ -22,6 +23,9 @@ BSSIDWiFiInfo = wifi_info_ns.class_(
 )
 MacAddressWifiInfo = wifi_info_ns.class_(
     "MacAddressWifiInfo", text_sensor.TextSensor, cg.Component
+)
+NetworksWifiInfo = wifi_info_ns.class_(
+    "NetworksWifiInfo", text_sensor.TextSensor, cg.Component
 )
 
 CONFIG_SCHEMA = cv.Schema(
@@ -46,6 +50,11 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.GenerateID(): cv.declare_id(MacAddressWifiInfo),
             }
         ),
+        cv.Optional(CONF_NETWORKS): text_sensor.TEXT_SENSOR_SCHEMA.extend(
+            {
+                cv.GenerateID(): cv.declare_id(NetworksWifiInfo),
+            }
+        ),
     }
 )
 
@@ -64,3 +73,4 @@ def to_code(config):
     yield setup_conf(config, CONF_SSID)
     yield setup_conf(config, CONF_BSSID)
     yield setup_conf(config, CONF_MAC_ADDRESS)
+    yield setup_conf(config, CONF_NETWORKS)
