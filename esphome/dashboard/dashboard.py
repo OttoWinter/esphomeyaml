@@ -503,7 +503,7 @@ class MDNSStatusThread(threading.Thread):
         while not STOP_EVENT.is_set():
             entries = _list_dashboard_entries()
             stat.request_query(
-                {entry.filename: entry.name + ".local." for entry in entries}
+                {entry.filename: entry.address for entry in entries}
             )
 
             PING_REQUEST.wait()
